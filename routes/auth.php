@@ -1,0 +1,25 @@
+<?php
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ForgetPasswordController;
+use Illuminate\Support\Facades\Route;
+
+Route::group(['middleware'=>['auth:sanctum','throttle:api']], function () {
+    Route::controller(AuthController::class)->group(function () {
+        Route::get('logout','logout');
+        Route::get('user','user');
+        Route::post('changePassword', 'changePassword');
+    });
+});
+
+Route::group(['middleware'=>['throttle:api']], function () {
+    Route::controller(AuthController::class)->group(function () {
+        Route::post('register', 'register');
+        Route::post('login','login');
+    });
+
+    Route::controller(ForgetPasswordController::class)->group(function () {
+        Route::post('forgetPassword','forgetPassword');
+        Route::post('check-otp', 'checkOtp');
+        Route::post('set-new-password','setNewPassword');
+    });
+});
