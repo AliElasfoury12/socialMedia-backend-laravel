@@ -27,7 +27,7 @@ Route::group(['middleware'=>['auth:sanctum','throttle:api']],function () {
     Route::apiResource('comments', CommentController::class)
     ->except(['index','edit','create']);
 
-    Route::get('like/{postId}',[LikeController::class, 'like']);
+    Route::get('like/{post}',[LikeController::class, 'like']);
     Route::get('follow/{user}',[FollowerController::class, 'follow']);
 
     

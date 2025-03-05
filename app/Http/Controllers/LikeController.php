@@ -10,17 +10,14 @@ use Illuminate\Support\Facades\DB;
 
 class LikeController extends Controller
 {
-    public function like(string $postId ,Request $request) 
+    public function like(Post $post, Request $request) 
     {
-
         $message = '';
         $auth = $request->user();
 
-        $post = Post::find($postId);
-        
         $exists = DB::table('likes')
         ->where('user_id', $auth->id)
-        ->where('post_id',$postId)->first();
+        ->where('post_id',$post->id)->first();
 
         if ($exists) {
             $post->likes()->detach($auth->id);
@@ -28,11 +25,11 @@ class LikeController extends Controller
         }else{
             $post->likes()->attach($auth->id);
             $message = 'Liked';
-            SendLikeNotifiction::dispatchAfterResponse($postId, $auth);
+            SendLikeNotifiction::dispatchAfterResponse($post->id, $auth);
         }
 
-        $likes = DB::table('likes')->where('post_id', $postId)->count();
-        broadcast(new LikeEvent($likes, $postId))->toOthers();
+        $likes = DB::table('likes')->where('post_id',$post->id)->count();
+        broadcast(new LikeEvent($likes, $post->id))->toOthers();
         
         return response()->json([
             'message' => $message,

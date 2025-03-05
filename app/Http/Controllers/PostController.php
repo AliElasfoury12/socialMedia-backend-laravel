@@ -20,7 +20,7 @@ class PostController extends Controller
 {
     public static function posts () {
         $posts = Post::with([
-            'user.follows',
+            'user.follows:id',
             'isLiked:id',
             'postImgs:id,post_id,img',
             'sharedPost'
