@@ -34,7 +34,7 @@ class PostController extends Controller
     {
         $posts = $this->posts()
         //->orderBy('likes_count','DESC')
-        ->orderBy('comments_count','DESC') 
+        //->orderBy('comments_count','DESC') 
         ->latest()->paginate(10);   
 
        // $posts = PostResource::collection($posts);
