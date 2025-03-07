@@ -9,20 +9,19 @@ use App\Http\Resources\PostResource;
 use App\Jobs\DeleteImagesJob;
 use App\Models\Post;
 use App\Models\PostImg;
-use App\Models\SharedPost;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Benchmark;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 
 class PostController extends Controller
 {
-    public static function posts () {
+    public static function posts () 
+    {
         $posts = Post::with([
             'user.follows:id',
-            'isLiked:id',
-            'postImgs:id,post_id,img',
+            'isLiked',
+            'postImgs',
             'sharedPost'
             ])->withCount(['likes','comments']);
     
@@ -163,7 +162,8 @@ class PostController extends Controller
     }
 
     //Share Post
-    public function sharePost (Request $request) {
+    public function sharePost (Request $request) 
+    {
         $data = [
             'post' => $request->post,
             'user_id' => $request->user()->id
@@ -171,16 +171,13 @@ class PostController extends Controller
        
         $post = Post::create($data);
 
-        SharedPost::create([
-            'post_id' => $post->id,
-            'shared_post_id' => $request->shared_post_id,
-        ]);
+        $post->sharedPost()->attach($request->shared_post_id);
 
-        $post->load(['user:id,name,img','sharedPost.post']);
+        $post->load(['user','sharedPost.user']);
 
         return response()->json([
-            'message' => 'post created Successfully',
-            'post' => new PostResource($post),
+            'message' => 'Post Shared Successfully',
+            'post' => $post,
         ], 200);
     }
 }

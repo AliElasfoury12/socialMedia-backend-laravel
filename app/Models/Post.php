@@ -23,12 +23,12 @@ class Post extends Model
 
     public function postImgs () 
     {
-        return $this->hasMany(PostImg::class);
+        return $this->hasMany(PostImg::class)->select(['id', 'post_id', 'img']);
     }
 
     public function user () 
     {
-        return $this->belongsTo(User::class)->select(['id','name']);
+        return $this->belongsTo(User::class)->select(['id','name','img']);
     }
 
     public function likes () 
@@ -38,7 +38,7 @@ class Post extends Model
 
     public function isLiked () 
     {
-        return $this->likes()->where('user_id', auth()->id());
+        return $this->likes()->select(['id'])->where('user_id', auth()->id());
     }
 
     public function comments () 
@@ -48,7 +48,8 @@ class Post extends Model
 
     public function sharedPost () 
     {
-        return $this->hasOne(SharedPost::class);
+        return $this->belongsToMany(Post::class, 'shared_posts', 'post_id', 'shared_post_id')
+        ->with(['postImgs','user'])->withTimestamps();
     }
 
 }
