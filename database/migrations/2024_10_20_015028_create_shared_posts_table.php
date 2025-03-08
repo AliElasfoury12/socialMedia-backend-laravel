@@ -12,7 +12,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('shared_posts', function (Blueprint $table) {
-            $table->id();
             $table->foreignId('post_id')->constrained()->cascadeOnDelete();
             $table->foreignId('shared_post_id')->constrained('posts')->cascadeOnDelete();
             $table->timestamps();
