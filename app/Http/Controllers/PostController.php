@@ -19,7 +19,7 @@ class PostController extends Controller
     public static function posts () 
     {
         $posts = Post::with([
-            'user.follows:id',
+            'user.follows',
             'isLiked',
             'postImgs',
             'sharedPost'
@@ -29,19 +29,20 @@ class PostController extends Controller
     }
 
     //index
-    public  function index( )
+    public  function index()
     {
         $posts = $this->posts()
         //->orderBy('likes_count','DESC')
         //->orderBy('comments_count','DESC') 
         ->latest()->paginate(10);   
 
-       // $posts = PostResource::collection($posts);
+       $posts = PostResource::collection($posts);
 
         //$lastPage = $posts->lastPage();
 
-    
-        return response()->json( ['posts' => $posts->items()] ,200);
+        return response()->json( compact('posts') ,200);
+
+        //return $posts;
     
        // broadcast(new PostEvent($posts))->toOthers();
        //broadcast(new testingEvent('message', 111)) ;

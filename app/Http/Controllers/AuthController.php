@@ -22,11 +22,11 @@ class AuthController extends Controller
             'password' => 'required|min:4|confirmed',
         ]);
 
-        if($validator->fails()){
+        if($validator->fails() ){
             return response()->json(['errors' => $validator->messages()], 422);
         }
 
-        $user->create($data);
+        $user = $user->create($data);
 
         return response()->json([
             'user' => $user,
@@ -57,14 +57,15 @@ class AuthController extends Controller
         $user = $request->user();
         $token = $user->createToken('main')->plainTextToken;
 
-        return response([
+        return response()->json([
             'message' => 'User loggedin successfully',
             'user' =>  $user,
             'token' => $token
-        ]);
+        ],200);
     }
 
-    public function user (Request $request) {
+    public function user (Request $request) 
+    {
         return $request->user()->toJson();
     }
 
