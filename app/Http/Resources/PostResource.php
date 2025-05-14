@@ -44,7 +44,7 @@ class PostResource extends JsonResource
            if($post[0]) $post = $post[0];
             return [
                 'id' => $post->id,
-                'post' => Str::limit($post->post, 80),
+                'content' => Str::limit($post->content, 80),
                 'post_imgs' => $post->postImgs,
                 'created_at' => $post->created_at,
                 'user' => $this->user($post->user),

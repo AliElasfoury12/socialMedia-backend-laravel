@@ -85,7 +85,9 @@ class User extends Authenticatable implements JWTSubject
 
     public function follows ()
     {
-       return $this->followers()->select('users.id')->where('follower_id', auth()->id());
+       return $this->followers()
+       ->select('users.id')
+       ->where('follower_id', auth()->id());
     }
 
     public function receivesBroadcastNotificationsOn(): string

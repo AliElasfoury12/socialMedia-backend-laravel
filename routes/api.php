@@ -14,18 +14,20 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
-Route::group(['middleware'=>['auth:sanctum','throttle:api']],function () {
+Route::put('/testput', function(Request $request){return $request->content;});
 
-    Route::apiResource('posts', PostController::class)
-    ->except(['edit','create']);
+Route::group(['middleware'=>['auth:sanctum','throttle:api']],function () 
+{
+    Route::apiResource('posts', PostController::class);
+
     Route::controller(PostController::class)->group(function () {
         Route::get('search-posts/{search}', 'searchPosts');
-        Route::delete('delete-image/{postImg}','deleteImg');
+        Route::delete('delete-images/{post}','deleteImages');
         Route::post('share-post','sharePost');
     });
    
     Route::apiResource('comments', CommentController::class)
-    ->except(['index','edit','create']);
+    ->except(['index']);
 
     Route::get('like/{post}',[LikeController::class, 'like']);
     Route::get('follow/{user}',[FollowerController::class, 'follow']);

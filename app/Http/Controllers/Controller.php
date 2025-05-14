@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 abstract class Controller
 {
+    use AuthorizesRequests;
     public function storeImage ($img, $path) {
         $storage = Storage::disk('public');
         $imageName = Str::random(32). '.' . $img->getClientOriginalExtension();

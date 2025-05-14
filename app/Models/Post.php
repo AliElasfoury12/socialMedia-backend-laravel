@@ -11,14 +11,12 @@ class Post extends Model
 
     protected $fillable = [
         'user_id',
-        'post',
-        'img'
+        'content'
     ];
 
     protected $hidden = [
-        'user_id',
-        'updated_at',
-        'pivot'
+        'pivot',
+        'user_id'
     ];
 
     public function postImgs () 
@@ -28,7 +26,9 @@ class Post extends Model
 
     public function user () 
     {
-        return $this->belongsTo(User::class)->select(['id','name','img']);
+        return $this->belongsTo(User::class)
+        ->select(['id','name','img'])
+        ->withCount(['follows AS isAuthFollows']);
     }
 
     public function likes () 
@@ -38,7 +38,9 @@ class Post extends Model
 
     public function isLiked () 
     {
-        return $this->likes()->select(['id'])->where('user_id', auth()->id());
+        return $this->likes()
+        ->select(['id'])
+        ->where('user_id', auth()->id());
     }
 
     public function comments () 
@@ -48,8 +50,11 @@ class Post extends Model
 
     public function sharedPost () 
     {
-        return $this->belongsToMany(Post::class, 'shared_posts', 'post_id', 'shared_post_id')
-        ->with(['postImgs','user'])->withTimestamps();
+        return $this
+        ->belongsToMany(Post::class, 'shared_posts', 'post_id', 'shared_post_id')
+        ->select(['id','user_id','content','shared_posts.created_at'])
+        ->with(['postImgs','user'])
+        ->withTimestamps();
     }
 
 }
