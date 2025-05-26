@@ -10,10 +10,15 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
-
 class UserController extends Controller
 {
-    //Index
+
+    private ImagesController $imagesController;
+
+    public function __construct() {
+        $this->imagesController = new ImagesController;
+    }
+
     public function index()
     {
         $users = User::paginate(15,['id','name','email','img'])->all();
@@ -22,7 +27,6 @@ class UserController extends Controller
          200);
     }
 
-    //Show
     public function show(User $user)
     {
         $user->load(['follows'])->loadCount(['followers', 'followings']);
@@ -36,7 +40,6 @@ class UserController extends Controller
         ],200);
     }
 
-    //update
     public function update(Request $request,User $user)
     {
         Gate::authorize('update', $user);
@@ -66,7 +69,6 @@ class UserController extends Controller
         ],200);
     }
 
-    //Delete
     public function destroy(User $user, Request $request)
     {
         Gate::authorize('delete', $user);
@@ -87,7 +89,6 @@ class UserController extends Controller
         ]);
     }
 
-    //SearchUser
     public function searchUsers($search) {
         $users = User::where('name','like', '%'. $search .'%')
        ->paginate(6,['id','name','img'])->all();
@@ -97,7 +98,6 @@ class UserController extends Controller
         ,200);
     }
 
-    //User Profile Posts
     public function userPosts ($id) {
        
        $posts = PostController::posts()
@@ -113,13 +113,12 @@ class UserController extends Controller
         ,200);
     }
 
-    //Change Profile Picture
     public function changrProfilePic (Request $request, User $user) {
         $valdated = $request->validate([
             'img' => 'required|image'
         ]);
 
-        $imageName = $this->storeImage($request->img, 'profile/');
+        $imageName = $this->imagesController->storeImage($request->img, 'profile/');
         $valdated['img'] = $imageName ;
         
         $user->update($valdated);

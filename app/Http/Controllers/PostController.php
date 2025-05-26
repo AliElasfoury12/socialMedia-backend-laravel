@@ -2,21 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\PostEvent;
-use App\Events\PrivateEvent;
-use App\Events\testingEvent;
 use App\Http\Resources\PostResource;
 use App\Jobs\DeleteImagesJob;
 use App\Models\Post;
-use App\Models\PostImg;
 use Illuminate\Http\Request;
-use Illuminate\Support\Benchmark;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
 
 class PostController extends Controller
 {
+    private ImagesController $imagesController;
+
+    public function __construct() {
+        $this->imagesController = new ImagesController;
+    }
+
     public static function posts () 
     {
         $posts = Post::select(['id','user_id','content','created_at'])
@@ -41,7 +39,7 @@ class PostController extends Controller
 
     public function show(Post $post)
     {
-        return response()->json($post->post, 200);
+        return response()->json($post->content, 200);
     }
 
     public function store(Request $request)
@@ -54,7 +52,7 @@ class PostController extends Controller
         $post = Post::create($data);
 
         $images = $request->allFiles();
-        if($images) $this->storePostImages($images, $post->id);
+        if($images) $this->imagesController->storePostImages($images, $post->id);
        
         $post->load(['user','postImgs']);
         unset($post->updated_at);
@@ -64,17 +62,6 @@ class PostController extends Controller
             'post' => $post
         ], 200);
 
-    }
-
-    private function storePostImages ($images, $postId) 
-    {
-        foreach ($images as $image) {
-            $imageName = $this->storeImage($image,'posts/');
-            PostImg::create([
-                'post_id' => $postId,
-                'img' => $imageName
-            ]);
-        }    
     }
 
     public function update(Request $request, Post $post)
@@ -89,7 +76,7 @@ class PostController extends Controller
         $post->update($data);
 
         $images = $request->allFiles();
-        if($images) $this->storePostImages($images, $post->id);
+        if($images) $this->imagesController->storePostImages($images, $post->id);
 
         $post->load(['postImgs']);
 
@@ -115,7 +102,6 @@ class PostController extends Controller
         ]);
     }
 
-    //search in posts
     public function searchPosts($search) {
         $posts = $this->posts()
         ->where('post','like', '%'. $search .'%')
@@ -126,34 +112,6 @@ class PostController extends Controller
         ,200);
     }
 
-    public function deleteImages (Request $request, Post $post) 
-    {
-        $validator = Validator::make($request->all(), ['images' => "required|array"]);
-        if($validator->fails()){
-            return response()->json([
-                'errors' => $validator->errors(),
-            ],422);
-        }
-        
-        $this->authorize('delete', $post);
-
-        $imagesIds = [];
-
-        foreach ($request->images as $image) {
-            Storage::disk('public')->delete('posts/'.$image['img']);
-            $imagesIds[] = $image['id'];
-        }
-
-        PostImg::whereIn('id', $imagesIds)->delete();
-
-        return response()->json([
-            'message' => 'Images Deleted successfully',
-            'images' => $request->images
-        ],200);
-
-    }
-
-    //Share Post
     public function sharePost (Request $request) 
     {
         $data = [

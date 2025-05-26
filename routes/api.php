@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\FollowerController;
+use App\Http\Controllers\ImagesController;
 use App\Http\Controllers\LikeController;
 use App\Http\Controllers\NotificationsController;
 use App\Http\Controllers\PostController;
@@ -14,7 +15,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
-Route::put('/testput', function(Request $request){return $request->content;});
 
 Route::group(['middleware'=>['auth:sanctum','throttle:api']],function () 
 {
@@ -22,10 +22,11 @@ Route::group(['middleware'=>['auth:sanctum','throttle:api']],function ()
 
     Route::controller(PostController::class)->group(function () {
         Route::get('search-posts/{search}', 'searchPosts');
-        Route::delete('delete-images/{post}','deleteImages');
         Route::post('share-post','sharePost');
     });
-   
+
+    Route::delete('delete-images/{post}',[ImagesController::class, 'deletePostImages']);
+
     Route::apiResource('comments', CommentController::class)
     ->except(['index']);
 
