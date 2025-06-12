@@ -34,7 +34,7 @@ class PostResource extends JsonResource
             'img' => $user->img,
         ];
 
-        if($user->follows) $data['follows'] = count($user->follows);
+        $data['follows'] = count($user->follows) ? true : false;
         return $data;
     }
 

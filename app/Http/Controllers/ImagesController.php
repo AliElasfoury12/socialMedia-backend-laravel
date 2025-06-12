@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\UserResource;
 use App\Models\Post;
 use App\Models\PostImg;
+use App\Models\ProfilePic;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -59,6 +62,27 @@ class ImagesController extends Controller
         $storage->put($path . $imageName, file_get_contents($img));
 
         return $imageName;
+    }
+
+    public function changrProfilePic (Request $request, User $user) {
+        $valdated = $request->validate([
+            'img' => 'required|image'
+        ]);
+
+        $imageName = $this->storeImage($request->img, 'profile/');
+        $valdated['img'] = $imageName ;
+        
+        $user->update($valdated);
+
+        ProfilePic::create([
+            'user_id' => $user->id,
+            'img' => $imageName
+        ]);
+
+        return response()->json([
+            'message' => 'image updated successfully',
+            'user' => new UserResource($user)
+        ],200);
     }
 
 }

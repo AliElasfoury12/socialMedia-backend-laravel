@@ -102,16 +102,6 @@ class PostController extends Controller
         ]);
     }
 
-    public function searchPosts($search) {
-        $posts = $this->posts()
-        ->where('post','like', '%'. $search .'%')
-        ->latest()->paginate(10,['id','post','created_at']);
-
-        return response()->json(
-            PostResource::collection($posts)
-        ,200);
-    }
-
     public function sharePost (Request $request) 
     {
         $data = [
@@ -123,11 +113,23 @@ class PostController extends Controller
 
         $post->sharedPost()->attach($request->shared_post_id);
 
-        $post->load(['user','sharedPost.user']);
+        $post->load(['user','sharedPost']);
 
         return response()->json([
             'message' => 'Post Shared Successfully',
             'post' => $post,
         ], 200);
     }
+    
+    public function searchPosts(string $search) 
+    {
+        $posts = $this->posts()
+        ->where('post','like', "%$search%")
+        ->latest()->paginate(10,['id','post','created_at']);
+
+        return response()->json(
+            PostResource::collection($posts)
+        ,200);
+    }
+
 }

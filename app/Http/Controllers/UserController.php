@@ -5,20 +5,13 @@ namespace App\Http\Controllers;
 use App\Http\Resources\PostResource;
 use App\Http\Resources\UserResource;
 use App\Jobs\DeleteImagesJob;
-use App\Models\ProfilePic;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 class UserController extends Controller
 {
-
-    private ImagesController $imagesController;
-
-    public function __construct() {
-        $this->imagesController = new ImagesController;
-    }
-
     public function index()
     {
         $users = User::paginate(15,['id','name','email','img'])->all();
@@ -113,24 +106,34 @@ class UserController extends Controller
         ,200);
     }
 
-    public function changrProfilePic (Request $request, User $user) {
-        $valdated = $request->validate([
-            'img' => 'required|image'
-        ]);
+    public function follow (User $user, Request $request) 
+    {
+        $authId = $request->user()->id;
 
-        $imageName = $this->imagesController->storeImage($request->img, 'profile/');
-        $valdated['img'] = $imageName ;
-        
-        $user->update($valdated);
+        if($user->id == $authId){
+            return response()->json(
+                ['error' => "can't follow your self" ]
+            ,422);
+        }
 
-        ProfilePic::create([
-            'user_id' => $user->id,
-            'img' => $imageName
-        ]);
+        $message = '';
+
+        $isFollowing = DB::table('followers')
+        ->where('user_id', $user->id)
+        ->where('follower_id', $authId)->first();
+
+        if ($isFollowing) {
+            $user->followers()->detach($authId);
+            $message = 'UnFollow';
+            
+        }else{
+            $user->followers()->attach($authId);
+            $message = 'Follow';
+        }
 
         return response()->json([
-            'message' => 'image updated successfully',
-            'user' => new UserResource( $user)
-        ],200);
+            'message' => $message,
+            'follows' => count($user->follows) ? true : false
+        ]);
     }
 }
