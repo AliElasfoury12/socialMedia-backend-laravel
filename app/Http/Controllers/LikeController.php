@@ -28,13 +28,11 @@ class LikeController extends Controller
             SendLikeNotifiction::dispatchAfterResponse($post->id, $auth);
         }
 
-        $likes = DB::table('likes')->where('post_id',$post->id)->count();
-        broadcast(new LikeEvent($likes, $post->id))->toOthers();
+        $likesCount = DB::table('likes')->where('post_id',$post->id)->count();
         
         return response()->json([
             'message' => $message,
-            'likes' => $likes ?? 0
+            'likesCount' => $likesCount ?? 0
         ]);
     }
-
 }
