@@ -84,18 +84,15 @@ class PostController extends Controller
         ];
 
         $post->update($data);
-
-        $this->storeImages($request, $post);
-
-        $post->load(['postImgs']);
+        $postImages = $this->storeImages($request, $post);
 
         return response()->json([
             'message' => 'Post Updated successfully',
             'post' => [
                 'content' => $post->content,
-                'post_imgs' => $post->postImgs ?? []
-            ],
-        ], 200);
+                'post_imgs' => $postImages
+            ]
+        ]);
     }
 
     public function destroy(Post $post)
@@ -107,7 +104,7 @@ class PostController extends Controller
         $post->delete();
 
         return response()->json([
-            'message' => 'post deleted successfully',
+            'message' => 'post deleted successfully'
         ]);
     }
 
@@ -133,13 +130,12 @@ class PostController extends Controller
         ];
        
         $post = Post::create($data);
-
         $post->sharedPost()->attach($sharedPostId);
 
         return response()->json([
             'message' => 'Post Shared Successfully',
             'post' => $post,
-        ], 200);
+        ]);
     }
     
     public function searchPosts(string $search) 
