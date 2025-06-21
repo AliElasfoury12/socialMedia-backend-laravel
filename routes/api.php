@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\CommentController;
-use App\Http\Controllers\FollowerController;
 use App\Http\Controllers\ImagesController;
 use App\Http\Controllers\LikeController;
 use App\Http\Controllers\NotificationsController;

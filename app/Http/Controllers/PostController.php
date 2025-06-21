@@ -20,7 +20,7 @@ class PostController extends Controller
         $posts = Post::select(['id','user_id','content','created_at'])
         ->with([
             'user' ,
-            'isLiked',
+            'isLikedByAuthUser',
             'postImgs',
             'sharedPost'
         ])->withCount(['likes','comments']);
@@ -30,16 +30,25 @@ class PostController extends Controller
 
     public function index()
     {
-        $posts = $this->posts()
-        ->latest()->paginate(10);   
+        $posts = $this->posts()->latest()->paginate(10);   
+        $posts = $posts->toArray()['data'];
+        $posts = $this->formatResponse($posts);
+        return response()->json(compact('posts')); 
+    }
 
-        $posts = PostResource::collection($posts);
-        return response()->json( compact('posts') ,200);  
+    private function formatResponse (array $posts) 
+    {
+        foreach ($posts as &$post) {
+            $post['is_liked_by_auth_user'] = $post['is_liked_by_auth_user'] ? true : false;
+            $post['user']['isAuthFollows'] = $post['user']['isAuthFollows'] ? true : false;
+            $post['shared_post'] = $post['shared_post'] ? $post['shared_post'][0] : [];
+        }
+        return $posts;
     }
 
     public function show(Post $post)
     {
-        return response()->json($post->content, 200);
+        return response()->json($post->content);
     }
 
     public function store(Request $request)
@@ -50,18 +59,19 @@ class PostController extends Controller
         ];
        
         $post = Post::create($data);
-
-        $images = $request->allFiles();
-        if($images) $this->imagesController->storePostImages($images, $post->id);
+        $post->post_imgs = $this->storeImages($request, $post);
        
-        $post->load(['user','postImgs']);
-        unset($post->updated_at);
-
         return response()->json([
             'message' => 'post created Successfully',
             'post' => $post
-        ], 200);
+        ]);
+    }
 
+    private function storeImages (Request $request,Post $post): array
+    {
+        $images = $request->allFiles();
+        if($images) $images = $this->imagesController->storePostImages($images, $post->id);
+        return $images;
     }
 
     public function update(Request $request, Post $post)
@@ -75,12 +85,11 @@ class PostController extends Controller
 
         $post->update($data);
 
-        $images = $request->allFiles();
-        if($images) $this->imagesController->storePostImages($images, $post->id);
+        $this->storeImages($request, $post);
 
         $post->load(['postImgs']);
 
-        return response([
+        return response()->json([
             'message' => 'Post Updated successfully',
             'post' => [
                 'content' => $post->content,
@@ -104,16 +113,28 @@ class PostController extends Controller
 
     public function sharePost (Request $request) 
     {
+        $sharedPostId = $request->shared_post_id;
+        if(!is_numeric($sharedPostId)){
+            return response()->json([
+                'message' => 'Post Not Found',
+            ], 404);
+        }
+
+        $isPostExsists = Post::find($sharedPostId);
+        if(!$isPostExsists){
+            return response()->json([
+                'message' => 'Post Not Found',
+            ], 404);
+        }
+
         $data = [
-            'post' => $request->post,
+            'content' => $request->content,
             'user_id' => $request->user()->id
         ];
        
         $post = Post::create($data);
 
-        $post->sharedPost()->attach($request->shared_post_id);
-
-        $post->load(['user','sharedPost']);
+        $post->sharedPost()->attach($sharedPostId);
 
         return response()->json([
             'message' => 'Post Shared Successfully',

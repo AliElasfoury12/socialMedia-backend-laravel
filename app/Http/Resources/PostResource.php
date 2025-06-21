@@ -47,6 +47,7 @@ class PostResource extends JsonResource
                 'content' => Str::limit($post->content, 80),
                 'post_imgs' => $post->postImgs,
                 'created_at' => $post->created_at,
+                'isLikedByAuthUser' => $post->isLikedByAuthUser->count() ? true : false,
                 'user' => $this->user($post->user),
             ];
         }else return [];

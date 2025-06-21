@@ -14,15 +14,17 @@ use Illuminate\Support\Str;
 
 class ImagesController extends Controller
 {
-    public function storePostImages ($images, $postId) 
+    public function storePostImages (array $images, int $postId): array 
     {
-        foreach ($images as $image) {
+        foreach ($images as &$image) {
             $imageName = $this->storeImage($image,'posts/');
-            PostImg::create([
+            $image = PostImg::create([
                 'post_id' => $postId,
                 'img' => $imageName
             ]);
-        }    
+            $image = ['id' => $image->id, 'img' => $image->img];
+        }  
+        return array_values($images);  
     }
 
     public function deletePostImages (Request $request, Post $post) 

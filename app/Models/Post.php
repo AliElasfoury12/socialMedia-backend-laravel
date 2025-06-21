@@ -16,7 +16,8 @@ class Post extends Model
 
     protected $hidden = [
         'pivot',
-        'user_id'
+        'user_id',
+        'updated_at'
     ];
 
     public function postImgs () 
@@ -36,7 +37,7 @@ class Post extends Model
         return $this->belongsToMany(User::class, 'likes')->withTimestamps();
     }
 
-    public function isLiked () 
+    public function isLikedByAuthUser () 
     {
         return $this->likes()
         ->select(['id'])
