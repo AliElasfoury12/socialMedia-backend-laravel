@@ -6,6 +6,7 @@ use App\Http\Resources\PostResource;
 use App\Jobs\DeleteImagesJob;
 use App\Models\Post;
 use Illuminate\Http\Request;
+use stdClass;
 
 class PostController extends Controller
 {
@@ -36,12 +37,13 @@ class PostController extends Controller
         return response()->json(compact('posts')); 
     }
 
-    private function formatResponse (array $posts) 
+    private function formatResponse (array $posts): array 
     {
         foreach ($posts as &$post) {
+            if (strlen($post['content']) > 80 ) $post['content'] = substr($post['content'],0,80).'...';
             $post['is_liked_by_auth_user'] = $post['is_liked_by_auth_user'] ? true : false;
             $post['user']['isAuthFollows'] = $post['user']['isAuthFollows'] ? true : false;
-            $post['shared_post'] = $post['shared_post'] ? $post['shared_post'][0] : [];
+            $post['shared_post'] = $post['shared_post'] ? $post['shared_post'][0] : new stdClass;
         }
         return $posts;
     }

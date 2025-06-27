@@ -39,7 +39,7 @@ class CommentController extends Controller
         return response([
             'messsage' => 'comment Created Successfully',
             'comment' => new CommentResource($comment)
-        ], 200);    
+        ]);    
     }
 
 
