@@ -133,7 +133,7 @@ class UserController extends Controller
 
         return response()->json([
             'message' => $message,
-            'follows' => count($user->follows) ? true : false
+            'follows' => $user->follows->count() ? true : false
         ]);
     }
 }

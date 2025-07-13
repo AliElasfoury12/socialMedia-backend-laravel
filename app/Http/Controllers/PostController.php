@@ -31,10 +31,12 @@ class PostController extends Controller
 
     public function index()
     {
-        $posts = $this->posts()->latest()->paginate(10);   
-        $posts = $posts->toArray()['data'];
+        $result = $this->posts()->latest()->cursorPaginate(10);  
+        $result = $result->toArray();
+        $posts = $result['data'];
+        $nextCursor = $result['next_cursor']; 
         $posts = $this->formatResponse($posts);
-        return response()->json(compact('posts')); 
+        return response()->json(compact('posts', 'nextCursor')); 
     }
 
     private function formatResponse (array $posts): array 

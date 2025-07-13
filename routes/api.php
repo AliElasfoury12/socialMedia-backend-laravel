@@ -17,6 +17,9 @@ use Illuminate\Support\Facades\Storage;
 
 Route::group(['middleware'=>['auth:sanctum','throttle:api']],function () 
 {
+    Route::apiResource('posts.comments', CommentController::class)
+    ->except(['show']);
+
     Route::apiResource('posts', PostController::class);
 
     Route::controller(PostController::class)->group(function (): void 
@@ -30,10 +33,6 @@ Route::group(['middleware'=>['auth:sanctum','throttle:api']],function ()
         Route::delete('delete-images/{post}', 'deletePostImages');
         Route::post('change-profile-picture/{user}','changrProfilePic');
     });
-
-
-    Route::apiResource('comments', CommentController::class)
-    ->except(['index']);
 
     Route::get('like/{post}',[LikeController::class, 'like']);
 
@@ -55,6 +54,7 @@ Route::group(['middleware'=>['auth:sanctum','throttle:api']],function ()
         Route::get('notifications/post/{post}/comment/{commentId}','notificationsPost');
     });  
 });
+
 
 Route::get('test', function () {
     //return $request->user()->id;
