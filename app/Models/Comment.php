@@ -12,7 +12,7 @@ class Comment extends Model
     protected $fillable = [
         'user_id',
         'post_id',
-        'comment'
+        'content'
     ];
 
     protected $hidden = [
@@ -20,8 +20,9 @@ class Comment extends Model
         'post_id',
     ];
 
-    public function user () {
-        return $this->belongsTo(User::class);
+    public function user () 
+    {
+        return $this->belongsTo(User::class)->select(['id','name','img']);
     }
        
 }

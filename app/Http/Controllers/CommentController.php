@@ -14,8 +14,8 @@ class CommentController extends Controller
     public function index (string $postId)  
     {
         $comments = Comment::where('post_id', $postId)
-        ->with(['user:id,name,img'])->latest()
-        ->paginate(5,['id','user_id','post_id','comment','created_at']);
+        ->with(['user'])->latest()
+        ->paginate(5,['id','user_id','post_id','content','created_at']);
 
         $comments = $comments->toArray()['data'];
    
@@ -25,7 +25,7 @@ class CommentController extends Controller
     public function store(Request $request, Post $post)
     {
         $validated = $request->validate([
-            'comment' => 'required'
+            'content' => 'required'
         ]);
 
         $validated['post_id'] = $post->id;
