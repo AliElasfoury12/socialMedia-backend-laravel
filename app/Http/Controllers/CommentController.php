@@ -13,13 +13,15 @@ class CommentController extends Controller
 {
     public function index (string $postId)  
     {
-        $comments = Comment::where('post_id', $postId)
+        $result = Comment::where('post_id', $postId)
         ->with(['user'])->latest()
-        ->paginate(5,['id','user_id','post_id','content','created_at']);
+        ->cursorPaginate(5,['id','user_id','post_id','content','created_at']);
 
-        $comments = $comments->toArray()['data'];
-   
-        return response()->json(compact('comments'));
+        $result = $result->toArray();
+        $comments = $result['data'];
+        $nextCursor = $result['next_cursor']; 
+
+        return response()->json(compact('comments', 'nextCursor'));
     }
 
     public function store(Request $request, Post $post)
