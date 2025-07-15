@@ -17,11 +17,10 @@ use Illuminate\Support\Facades\Storage;
 
 Route::group(['middleware'=>['auth:sanctum','throttle:api']],function () 
 {
-    Route::apiResource('posts.comments', CommentController::class)
-    ->except(['show', 'update']);
-    
-    Route::put('comments/{comment}/update', [CommentController::class, 'update']);
+    Route::apiResource('posts.comments', CommentController::class)->only(['index', 'store']);
 
+    Route::apiResource('comments', CommentController::class)->only(['update', 'destroy']);
+    
     Route::apiResource('posts', PostController::class);
 
     Route::controller(PostController::class)->group(function (): void 
