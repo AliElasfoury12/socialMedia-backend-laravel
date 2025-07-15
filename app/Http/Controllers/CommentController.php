@@ -44,23 +44,20 @@ class CommentController extends Controller
         ]);    
     }
 
-
     public function update(Request $request, Comment $comment)
     {
         Gate::authorize('update', $comment);
 
         $validated = $request->validate([
-            'comment' => 'required|min:1',
+            'content' => 'required',
         ]);
 
         $comment->update($validated);
 
-        $comment->load(['user:id,name,img']);
-
-        return response([
+        return response()->json([
             'messsage' => 'comment Updated Successfully',
-            'comment' => new CommentResource($comment)
-        ], 200);
+            'commentContent' => $comment->content
+        ]);
     }
 
     public function destroy(Comment $comment)
