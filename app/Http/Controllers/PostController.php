@@ -112,21 +112,9 @@ class PostController extends Controller
         ]);
     }
 
-    public function sharePost (Request $request) 
+    public function sharePost (Request $request, Post $post) 
     {
-        $sharedPostId = $request->shared_post_id;
-        if(!is_numeric($sharedPostId)){
-            return response()->json([
-                'message' => 'Post Not Found',
-            ], 404);
-        }
-
-        $isPostExsists = Post::find($sharedPostId);
-        if(!$isPostExsists){
-            return response()->json([
-                'message' => 'Post Not Found',
-            ], 404);
-        }
+        $sharedPostId = $post->id;
 
         $data = [
             'content' => $request->content,

@@ -17,17 +17,17 @@ use Illuminate\Support\Facades\Storage;
 
 Route::group(['middleware'=>['auth:sanctum','throttle:api']],function () 
 {
-    Route::apiResource('posts.comments', CommentController::class)->only(['index', 'store']);
-
-    Route::apiResource('comments', CommentController::class)->only(['update', 'destroy']);
-    
     Route::apiResource('posts', PostController::class);
 
     Route::controller(PostController::class)->group(function (): void 
     {
         Route::get('search-posts/{search}', 'searchPosts');
-        Route::post('share-post','sharePost');
+        Route::post('posts/{post}/share','sharePost');
     });
+
+    Route::apiResource('posts.comments', CommentController::class)->only(['index', 'store']);
+
+    Route::apiResource('comments', CommentController::class)->only(['update', 'destroy']);
 
     Route::controller(ImagesController::class)->group(function (): void 
     {
@@ -62,7 +62,7 @@ Route::get('test', function () {
     //return auth()->id();
     //return request()->user()->id;
     $posts = Post::latest()->paginate(3);
-    $posts->load(['sharedPost']);
+    //$posts->load(['sharedPost']);
    // return response()->json(PostResource::collection($posts));
    return PostResource::collection($posts);
 });
