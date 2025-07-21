@@ -15,14 +15,15 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
 
-Route::group(['middleware'=>['auth:sanctum','throttle:api']],function () 
+Route::group(['middleware'=>['auth:sanctum','throttle:api']],function (): void 
 {
     Route::apiResource('posts', PostController::class);
 
     Route::controller(PostController::class)->group(function (): void 
     {
-        Route::get('search-posts/{search}', 'searchPosts');
         Route::post('posts/{post}/share','sharePost');
+        Route::get('posts/{post}/like', 'like');
+        Route::get('search-posts/{search}', 'searchPosts');
     });
 
     Route::apiResource('posts.comments', CommentController::class)->only(['index', 'store']);
@@ -35,7 +36,6 @@ Route::group(['middleware'=>['auth:sanctum','throttle:api']],function ()
         Route::post('change-profile-picture/{user}','changrProfilePic');
     });
 
-    Route::get('like/{post}',[LikeController::class, 'like']);
 
     Route::apiResource('users', UserController::class)
     ->except(['store','destroy']);
