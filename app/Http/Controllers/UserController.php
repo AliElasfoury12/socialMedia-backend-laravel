@@ -12,6 +12,11 @@ use Illuminate\Support\Facades\Gate;
 
 class UserController extends Controller
 {
+    private PostController $postController;
+
+    public function __construct () {
+        $this->postController = new PostController();
+    }
     public function index()
     {
         $users = User::paginate(15,['id','name','email','img'])->all();
@@ -20,17 +25,17 @@ class UserController extends Controller
          200);
     }
 
-    public function show(User $user)
+    public function show(string $userId)
     {
-        $user->load(['follows'])->loadCount(['followers', 'followings']);
-        return response()->json([
-            'id' => $user->id,
-            'name' => $user->name,
-            'img' => $user->img,
-            'followers_count' => $user->followers_count,
-            'followings_count' => $user->followings_count,
-            'follows' => count($user->follows)
-        ],200);
+        $user = User::where('id', $userId)
+        ->with(['follows'])
+        ->withCount(['followers', 'followings'])->get();
+
+        $user = $user->toArray()[0];
+        $user['follows'] = count($user['follows']) == 0 ? false : true;  
+        unset($user['email']);
+
+        return response()->json(compact('user'));
     }
 
     public function update(Request $request,User $user)
@@ -93,17 +98,18 @@ class UserController extends Controller
 
     public function userPosts ($id) {
        
-       $posts = PostController::posts()
+       $posts = $this->postController->posts()
        ->where('user_id',$id)
        ->latest()->paginate(10);
 
        $lastPage = $posts->lastPage();
        $page = $posts ->currentPage();
-       $posts = PostResource::collection($posts);
+       $posts = $posts->toArray()['data'];
+       $posts = $this->postController->formatResponse($posts);
 
         return response()->json(
             compact(['posts', 'page', 'lastPage'])
-        ,200);
+        );
     }
 
     public function follow (User $user, Request $request) 
