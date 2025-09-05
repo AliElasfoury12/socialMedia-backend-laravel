@@ -1,5 +1,5 @@
 <h1>
-    Hi {{$user->name}} ,
+    Hi {{$userName}} ,
 </h1>
 
 <h3>

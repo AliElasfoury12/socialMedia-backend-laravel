@@ -29,7 +29,7 @@ class Post extends Model
     {
         return $this->belongsTo(User::class)
         ->select(['id','name','img'])
-        ->withCount(['follows AS isAuthFollows']);
+        ->with(['isAuthUserFollows']);
     }
 
     public function likes () 

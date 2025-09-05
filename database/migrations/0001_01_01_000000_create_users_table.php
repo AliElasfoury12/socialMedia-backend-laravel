@@ -20,8 +20,6 @@ return new class extends Migration
             $table->string('img')->nullable();
             $table->rememberToken();
             $table->timestamps();
-            $table->integer('forget_password_otp')->nullable();
-            $table->timestamp('otp_updated_at')->nullable();
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

@@ -38,14 +38,14 @@ class UserController extends Controller
         return response()->json(compact('user'));
     }
 
-    public function update(Request $request,User $user)
+    public function update(Request $request, User $user)
     {
         Gate::authorize('update', $user);
 
         $valdated = $request->validate([
-            'password' => "required|current_password",
-            'name' => 'required|string|min:3|max:50',
-            'email' =>'required|email',
+            'name' => 'string|min:1|max:100',
+            'email' =>'email|max:100',
+            'password' => "current_password|max:100"
         ]);
 
         $emailTaken = $user->where('email', $request->email)

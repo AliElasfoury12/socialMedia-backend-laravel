@@ -18,8 +18,9 @@ Route::group(['middleware'=>['throttle:api']], function () {
     });
 
     Route::controller(ForgetPasswordController::class)->group(function () {
-        Route::post('forgetPassword','forgetPassword');
+        Route::post('find_user_and_send_otp','findUserAndSendOTP');
+        Route::post('resend-otp', 'resendOTP');
         Route::post('check-otp', 'checkOtp');
-        Route::post('set-new-password','setNewPassword');
+        Route::patch('set_new_password','setNewPassword');
     });
 });

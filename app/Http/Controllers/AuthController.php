@@ -2,13 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
@@ -18,8 +16,8 @@ class AuthController extends Controller
         $data = $request->all();
         $validator = Validator::make($data, [
             'name' => 'required|string|max:100',
-            'email' =>'required|email|unique:users,email',
-            'password' => 'required|min:4|confirmed',
+            'email' =>'required|email|unique:users,email|max:100',
+            'password' => 'required|min:4|confirmed|max:100',
         ]);
 
         if($validator->fails() ){
@@ -31,15 +29,16 @@ class AuthController extends Controller
         return response()->json([
             'user' => $user,
             'message' => 'User created successfully',
-        ],200);
+        ]);
     }
 
     public function login(Request $request)
     {
         $data = $request->all();
-        $validator = Validator::make($request->all(), [
-            'email' =>'required|email',
-            'password' => 'required|min:4'
+
+        $validator = Validator::make($data, [
+            'email' =>'required|email|max:100',
+            'password' => 'required|min:4|max:100'
         ]);
 
         if($validator->fails()){
@@ -49,19 +48,19 @@ class AuthController extends Controller
         if (!Auth::attempt($data)) {
             return response()->json([
                 "errors" =>[
-                    'email' =>  "Email or Password is Wrong"
+                    'email' =>  ["Email or Password is Wrong"]
                 ]
             ],422);
         }
 
         $user = $request->user();
-        $token = $user->createToken('main')->plainTextToken;
+        $token = $user->createToken('auth_token',['*'], now()->addDays(7))->plainTextToken;
 
         return response()->json([
             'message' => 'User loggedin successfully',
             'user' =>  $user,
             'token' => $token
-        ],200);
+        ]);
     }
 
     public function user (Request $request) 
@@ -71,7 +70,7 @@ class AuthController extends Controller
 
     public function logout()
     {
-        $user = request()->user();
+        $user = request()->user(); 
 
         $user->currentAccessToken()->delete();
 

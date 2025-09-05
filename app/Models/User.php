@@ -35,8 +35,6 @@ class User extends Authenticatable implements JWTSubject
         'password',
         'remember_token',
         'email_verified_at',
-        'forget_password_otp',
-        'otp_updated_at',
         'updated_at',
         'pivot'
     ];
@@ -83,11 +81,11 @@ class User extends Authenticatable implements JWTSubject
         return $this->belongsToMany(User::class,'followers','user_id', 'follower_id')->withTimestamps();;
     }
 
-    public function follows ()
+    public function isAuthUserFollows ()
     {
        return $this->followers()
        ->select('users.id')
-       ->where('follower_id', auth()->id());
+       ->where('follower_id', auth()->id())->limit(1);
     }
 
     public function receivesBroadcastNotificationsOn(): string

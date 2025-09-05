@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -9,19 +10,19 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class ForgetPasswordOTPMail extends Mailable
+class ForgetPasswordOTPMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    private $user;
-    private $otp;
+    private string $userName;
+    private string $otp;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($user, $otp)
+    public function __construct(string $userName, int $otp)
     {
-        $this->user = $user;
+        $this->userName = $userName;
         $this->otp = $otp;
     }
 
@@ -43,7 +44,7 @@ class ForgetPasswordOTPMail extends Mailable
         return new Content(
             view: 'emails.forget-passord-otp',
             with:[
-                'user' => $this->user,
+                'userName' => $this->userName,
                 'otp' => $this->otp
             ]
         );

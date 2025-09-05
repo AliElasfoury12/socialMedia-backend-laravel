@@ -44,13 +44,15 @@ class PostController extends Controller
     public function formatResponse (array $posts): array 
     {
         foreach ($posts as &$post) {
-            if (strlen($post['content']) > 80 ) $post['content'] = substr($post['content'],0,80).'...';
+            if (strlen($post['content']) > 80 ) 
+                $post['content'] = substr($post['content'],0,80).'...';
+            
             $post['is_liked_by_auth_user'] = $post['is_liked_by_auth_user'] ? true : false;
-            $post['user']['isAuthFollows'] = $post['user']['isAuthFollows'] ? true : false;
+            $post['user']['is_auth_user_follows'] = $post['user']['is_auth_user_follows'] ? true : false;
             
             if($post['shared_post']) {
                 $post['shared_post'] = $post['shared_post'][0];
-                $post['shared_post']['user']['isAuthFollows'] = $post['shared_post']['user']['isAuthFollows'] ? true : false;
+                $post['shared_post']['user']['is_auth_user_follows'] = $post['shared_post']['user']['is_auth_user_follows'] ? true : false;
             }else 
                 $post['shared_post'] = new stdClass;
     
@@ -58,6 +60,7 @@ class PostController extends Controller
         return $posts;
     }
 
+   
     public function show(Post $post)
     {
         return response()->json($post->content);
