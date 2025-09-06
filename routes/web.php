@@ -9,16 +9,16 @@ use Illuminate\Support\Facades\Route;
 use Carbon\Carbon;
 use function React\Promise\all;
 
-Route::get('/', function () {
-    // $post = new PostController(); 
-    // $result = $post->index();
+// Route::get('/', function () {
+//     // $post = new PostController(); 
+//     // $result = $post->index();
     
-   var_dump( response()->json([
-        'message' => 'OTP Matches',
-        'token' => 'OTP'
-   ])->status());
-    // echo '<pre>';
-    //     print_r(json_decode($result->content()));
-    // echo'</pre>';
+//    var_dump( response()->json([
+//         'message' => 'OTP Matches',
+//         'token' => 'OTP'
+//    ])->status());
+//     // echo '<pre>';
+//     //     print_r(json_decode($result->content()));
+//     // echo'</pre>';
 
-});
+// });

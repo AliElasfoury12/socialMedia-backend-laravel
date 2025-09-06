@@ -8,6 +8,7 @@ use App\Jobs\SendLikeNotifiction;
 use App\Models\Post;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use stdClass;
 
 class PostController extends Controller
@@ -68,11 +69,17 @@ class PostController extends Controller
 
     public function store(Request $request)
     {
+        if(!$request['content'] && !$request->allFiles() ){
+            return response()->json([
+                'message' => 'you must add post content or one image' 
+            ], 422);
+        }
+
         $data = [
-            'content' => $request->content,
+            'content' => $request['content'] ?? '',
             'user_id' => $request->user()->id
         ];
-       
+
         $post = Post::create($data);
         $post->post_imgs = $this->storeImages($request, $post);
        
@@ -94,7 +101,7 @@ class PostController extends Controller
         $this->authorize('update', $post);
 
         $data = [
-            'content' => $request->content,
+            'content' => $request['content'] ?? '',
             'user_id' => $request->user()->id
         ];
 
@@ -128,7 +135,7 @@ class PostController extends Controller
         $sharedPostId = $post->id;
 
         $data = [
-            'content' => $request->content,
+            'content' => $request['content'] ?? '',
             'user_id' => $request->user()->id
         ];
        
