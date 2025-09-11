@@ -41,20 +41,22 @@ class AuthController extends Controller
             'password' => 'required|min:4|max:100'
         ]);
 
-        if($validator->fails()){
+        if($validator->fails())
             return response()->json(['errors' => $validator->messages()], 422);
-        }
 
-        if (!Auth::attempt($data)) {
+        $user = User::select(['id', 'name', 'email', 'password', 'profile_image_id'])
+        ->where('email', $request->email)->with(['profilePic'])->first();
+        
+        if(!$user || !Hash::check($request->password, $user->password)){
             return response()->json([
                 "errors" =>[
-                    'email' =>  ["Email or Password is Wrong"]
+                    'password' =>  ["Email or Password is Wrong"]
                 ]
             ],422);
         }
 
-        $user = $request->user();
         $token = $user->createToken('auth_token',['*'], now()->addDays(7))->plainTextToken;
+        unset($user->password, $user->profile_image_id);
 
         return response()->json([
             'message' => 'User loggedin successfully',
@@ -68,12 +70,9 @@ class AuthController extends Controller
         return $request->user()->toJson();
     }
 
-    public function logout()
+    public function logout(Request $request)
     {
-        $user = request()->user(); 
-
-        $user->currentAccessToken()->delete();
-
+        $request->user()->currentAccessToken()->delete();
         return response()->json(['message' => 'Successfully logged out']);
     }
 
@@ -99,7 +98,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Password Updated Successfully',
-        ],200);
+        ]);
     }
 
 }

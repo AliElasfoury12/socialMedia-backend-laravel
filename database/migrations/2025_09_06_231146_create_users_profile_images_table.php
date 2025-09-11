@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('profile_pics', function (Blueprint $table) {
+        Schema::create('users_profile_images',function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('img')->nullable();
-            $table->timestamps();
+            $table->string('url');
+            $table->timestamp('created_at');
         });
     }
 
@@ -24,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('profile_pics');
+        Schema::dropIfExists('users_profile_images');
     }
 };

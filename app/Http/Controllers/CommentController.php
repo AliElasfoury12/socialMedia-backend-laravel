@@ -8,6 +8,7 @@ use App\Jobs\SendCommentNotifiction;
 use App\Models\Post;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Validator;
 
 class CommentController extends Controller
 {
@@ -24,19 +25,25 @@ class CommentController extends Controller
         return response()->json(compact('comments', 'nextCursor'));
     }
 
-    public function store(Request $request, Post $post)
+    public function store(Request $request, int $postId)
     {
-        $validated = $request->validate([
-            'content' => 'required'
+        $data = [
+            'content' => $request['content']
+        ];
+
+        $validator = Validator::make($data, [
+            'content' => 'required|min:1|max:500'
         ]);
 
-        $validated['post_id'] = $post->id;
-        $validated['user_id'] = $request->user()->id;
-
-        $comment = Comment::create($validated);
-        unset($comment->updated_at);
+        if($validator->fails())
+            return response()->json(['errors' => $validator->messages()], 422);
         
-        SendCommentNotifiction::dispatchAfterResponse($post->id, $request->user(), $comment);
+        $data['post_id'] = $postId;
+        $data['user_id'] = $request->user()->id;
+
+        $comment = Comment::create($data);
+        
+        SendCommentNotifiction::dispatchAfterResponse($postId, $request->user(), $comment);
 
         return response()->json([
             'messsage' => 'comment Created Successfully',
@@ -44,19 +51,26 @@ class CommentController extends Controller
         ]);    
     }
 
-    public function update(Request $request, Comment $comment)
+    public function update(Request $request, string $commentId)
     {
-        Gate::authorize('update', $comment);
+       $data = [
+            'content' => $request['content']
+        ];
 
-        $validated = $request->validate([
-            'content' => 'required',
+        $validator = Validator::make($data, [
+            'content' => 'required|min:1|max:500'
         ]);
 
-        $comment->update($validated);
+        if($validator->fails())
+            return response()->json(['errors' => $validator->messages()], 422);
+
+        Comment::where('id', $commentId)
+        ->where('user_id', $request->user()->id)
+        ->update($data);
 
         return response()->json([
             'messsage' => 'comment Updated Successfully',
-            'commentContent' => $comment->content
+            'commentContent' => $request['content']
         ]);
     }
 
@@ -69,6 +83,6 @@ class CommentController extends Controller
         return response()->json([
             'message' => 'Comment deleted successfully',
             'comment' => $comment
-        ], 200);
+        ]);
     }
 }

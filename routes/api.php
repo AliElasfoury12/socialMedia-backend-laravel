@@ -5,11 +5,14 @@ use App\Http\Controllers\ImagesController;
 use App\Http\Controllers\NotificationsController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\UsersProfileImageController;
 use Illuminate\Support\Facades\Route;
 
 
 Route::group(['middleware'=>['auth:sanctum','throttle:api']],function (): void 
 {
+    //posts
+
     Route::apiResource('posts', PostController::class);
 
     Route::controller(PostController::class)->group(function (): void 
@@ -19,16 +22,16 @@ Route::group(['middleware'=>['auth:sanctum','throttle:api']],function (): void
         Route::get('search-posts/{search}', 'searchPosts');
     });
 
-    Route::apiResource('posts.comments', CommentController::class)->only(['index', 'store']);
+    //comments
 
+    Route::apiResource('posts.comments', CommentController::class)->only(['index', 'store']);
     Route::apiResource('comments', CommentController::class)->only(['update', 'destroy']);
 
-    Route::controller(ImagesController::class)->group(function (): void 
-    {
-        Route::delete('delete-images/{post}', 'deletePostImages');
-        Route::post('change-profile-picture/{user}','changrProfilePic');
-    });
+    //images
+    Route::delete('delete-images/{post}', [ImagesController::class,'deletePostImages']);
+    Route::apiResource('user-profile-image',UsersProfileImageController::class);
 
+    //users
     Route::apiResource('users', UserController::class)
     ->except(['store','destroy']);
 
@@ -39,6 +42,7 @@ Route::group(['middleware'=>['auth:sanctum','throttle:api']],function (): void
         Route::get('follow/{user}','follow');
     });
 
+    //notifications
     Route::controller(NotificationsController::class)->group(function () {
         Route::get('notifications','index');
         Route::get('notifications/mark-all-as-read','markAllAsRead');

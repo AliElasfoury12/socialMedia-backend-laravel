@@ -4,7 +4,8 @@ use App\Http\Controllers\ForgetPasswordController;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['middleware'=>['auth:sanctum','throttle:api']], function () {
-    Route::controller(AuthController::class)->group(function () {
+    Route::controller(AuthController::class)->group(function () 
+    {
         Route::get('logout','logout');
         Route::get('user','user');
         Route::post('changePassword', 'changePassword');

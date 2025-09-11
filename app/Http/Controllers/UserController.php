@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
@@ -19,52 +20,45 @@ class UserController extends Controller
     }
     public function index()
     {
-        $users = User::paginate(15,['id','name','email','img'])->all();
-        return response()->json(
-            UserResource::collection($users),
-         200);
+        $users = User::paginate(15,['id','name','email']);
+        return response()->json(UserResource::collection($users));
     }
 
     public function show(string $userId)
     {
-        $user = User::where('id', $userId)
-        ->with(['follows'])
+        $user = User::select(['id','name', 'profile_image_id'])->where('id', $userId)
+        ->with(['isAuthUserFollows','profilePic:id,url'])
         ->withCount(['followers', 'followings'])->get();
 
         $user = $user->toArray()[0];
-        $user['follows'] = count($user['follows']) == 0 ? false : true;  
-        unset($user['email']);
+        $user['is_auth_user_follows'] = count($user['is_auth_user_follows']) == 0 ? false : true;  
+        unset($user->profile_image_id);
 
         return response()->json(compact('user'));
     }
 
-    public function update(Request $request, User $user)
+    public function update(Request $request)
     {
-        Gate::authorize('update', $user);
+        $data = $request->all();
+        $auth_user = $request->user();
 
-        $valdated = $request->validate([
-            'name' => 'string|min:1|max:100',
-            'email' =>'email|max:100',
-            'password' => "current_password|max:100"
+        $validator = Validator::make($data, [
+            'name' => 'required|string|min:1|max:200',
+            'email' => "required|email|unique:users,email,{$auth_user->id}|max:200",
+            'password' => "required|current_password|max:200"
         ]);
 
-        $emailTaken = $user->where('email', $request->email)
-        ->where('id',"!=",$user->id)->first();
-
-        if($emailTaken){
-            return response([
-                'errors' =>[
-                    'email' => ['Email is taken']
-                ] 
-            ],422);
-        }
-
-       $user->update($valdated);
+        if($validator->fails())
+            return response()->json(['errors' => $validator->messages()], 422);
+        
+       
+       $auth_user->update($data);
+       $auth_user = $auth_user->only(['id', 'name', 'email']);
 
         return response()->json([
             'message' => 'User updated successfully',
-            'user' => new UserResource( $user )
-        ],200);
+            'user' => $auth_user
+        ]);
     }
 
     public function destroy(User $user, Request $request)
@@ -89,14 +83,14 @@ class UserController extends Controller
 
     public function searchUsers($search) {
         $users = User::where('name','like', '%'. $search .'%')
-       ->paginate(6,['id','name','img'])->all();
+       ->paginate(6,['id','name','img']);
 
         return response()->json(
             $users
         ,200);
     }
 
-    public function userPosts ($id) {
+    public function userPosts (int $id) {
        
        $posts = $this->postController->posts()
        ->where('user_id',$id)

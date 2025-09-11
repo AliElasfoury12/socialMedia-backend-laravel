@@ -28,8 +28,8 @@ class Post extends Model
     public function user () 
     {
         return $this->belongsTo(User::class)
-        ->select(['id','name','img'])
-        ->with(['isAuthUserFollows']);
+        ->select(['id','name','profile_image_id'])
+        ->with(['isAuthUserFollows', 'profilePic']);
     }
 
     public function likes () 

@@ -23,7 +23,6 @@ class User extends Authenticatable implements JWTSubject
         'name',
         'email',
         'password',
-        'img'
     ];
 
     /**
@@ -32,11 +31,8 @@ class User extends Authenticatable implements JWTSubject
      * @var array<int, string>
      */
     protected $hidden = [
-        'password',
-        'remember_token',
-        'email_verified_at',
-        'updated_at',
-        'pivot'
+        'pivot',
+        'profile_image_id'
     ];
 
     /**
@@ -86,6 +82,12 @@ class User extends Authenticatable implements JWTSubject
        return $this->followers()
        ->select('users.id')
        ->where('follower_id', auth()->id())->limit(1);
+    }
+
+    public function profilePic ()  
+    {
+        return $this->hasOne(UsersProfileImage::class, 'id','profile_image_id')
+        ->select(['id', 'url']);
     }
 
     public function receivesBroadcastNotificationsOn(): string
