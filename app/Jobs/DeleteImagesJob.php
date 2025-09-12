@@ -3,7 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\PostImg;
-use App\Models\ProfilePic;
+use App\Models\UsersProfileImage;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Storage;
@@ -28,7 +28,6 @@ class DeleteImagesJob implements ShouldQueue
      */
     public function handle(): void
     {
-
         if($this->type === 'posts'){
             $imgs = PostImg::where('post_id', $this->id)->pluck('img');
 
@@ -38,11 +37,13 @@ class DeleteImagesJob implements ShouldQueue
                 }
             }
 
-        }elseif($this->type === 'profile'){
-            $imgs = ProfilePic::where('user_id', $this->id)->pluck('img');
+        }
+        
+        if($this->type === 'profile'){
+            $imgs = UsersProfileImage::selet('url')->where('user_id', $this->id)->get();
 
-            foreach ($imgs as $img) {
-                Storage::disk('public')->delete("profile/$img");
+            foreach ($imgs as $image) {
+                Storage::disk('public')->delete("profile/$image");
             }
         }
 

@@ -2,22 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\PostResource;
 use App\Http\Resources\UserResource;
 use App\Jobs\DeleteImagesJob;
 use App\Models\User;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
-    private PostController $postController;
-
-    public function __construct () {
-        $this->postController = new PostController();
-    }
     public function index()
     {
         $users = User::paginate(15,['id','name','email']);
@@ -61,15 +58,15 @@ class UserController extends Controller
         ]);
     }
 
-    public function destroy(User $user, Request $request)
+    public function destroy(Request $request)
     {
-        Gate::authorize('delete', $user);
-
-        $request->validate([
-            'password' => "required|current_password"
+        $this->isValid($request, [
+            'password' => "required|current_password|max:200"
         ]);
 
-        if($user->img){
+        $user = $request->user();
+
+        if($user->profile_image_id){
             DeleteImagesJob::dispatchSync($user->id, 'profile');
         } 
        
@@ -77,7 +74,7 @@ class UserController extends Controller
 
         return response()->json([
             'message' => 'User deleted successfully',
-            'user' => new UserResource($user)
+            'user' => $user->only(['id', 'name', 'email'])
         ]);
     }
 
@@ -92,14 +89,14 @@ class UserController extends Controller
 
     public function userPosts (int $id) {
        
-       $posts = $this->postController->posts()
-       ->where('user_id',$id)
+       $postController = new PostController();
+       $posts = $postController->posts()->where('user_id',$id)
        ->latest()->paginate(10);
 
        $lastPage = $posts->lastPage();
        $page = $posts ->currentPage();
        $posts = $posts->toArray()['data'];
-       $posts = $this->postController->formatResponse($posts);
+       $posts = $postController->formatResponse($posts);
 
         return response()->json(
             compact(['posts', 'page', 'lastPage'])
@@ -135,5 +132,17 @@ class UserController extends Controller
             'message' => $message,
             'follows' => $user->follows->count() ? true : false
         ]);
+    }
+
+    private function isValid (Request $request, array $rules): array 
+    {
+        $data = $request->all();
+
+        $validator = Validator::make($data, $rules);
+
+        if($validator->fails()) {
+            throw new HttpResponseException(new JsonResponse(['errors' => $validator->errors()], 422));
+        }
+        return $data;
     }
 }
