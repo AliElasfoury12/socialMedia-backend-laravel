@@ -51,13 +51,13 @@ $notifications_routes = function ()
 {
     Route::controller(NotificationsController::class)->group(function () {
         Route::get('notifications','index');
+        Route::get('notifications-count','getNotificationsCount');
         Route::get('notifications/mark-all-as-read','markAllAsRead');
         Route::get('notifications/mark-as-read/{id}','markAsRead');
         Route::get('notifications/seen', 'seen');
         Route::get('notifications/post/{post}/comment/{commentId}','notificationsPost');
     });  
 };
-
 
 Route::group(['middleware'=>['auth:sanctum','throttle:api']],function () 
     use ($post_routes, $comments_routes, $images_routes, $users_routes, $notifications_routes)

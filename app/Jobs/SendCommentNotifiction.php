@@ -37,9 +37,11 @@ class SendCommentNotifiction implements ShouldQueue
     public function handle(): void
     {
         $post = Post::find($this->postId);
-        if($post->user_id != $this->auth->id){
+
+        if($post->user_id == $this->auth->id) return;
+
            $postUser = User::find($post->user_id);
-           $title =$this->auth->name. ' ' . 'Commented on Your Post';
+           $title = $this->auth->name. ' ' . 'Commented on Your Post';
            $user = [
                 'name' =>$this->auth->name,
                 'img' => $this->auth->img
@@ -57,6 +59,6 @@ class SendCommentNotifiction implements ShouldQueue
                 'created_at' => $this->comment->created_at,
                 'user' => $user
             ]));
-        }
+        
     }
 }

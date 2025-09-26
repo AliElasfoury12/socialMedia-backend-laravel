@@ -23,8 +23,9 @@ class UserController extends Controller
 
     public function show(string $userId)
     {
-        $user = User::select(['id','name', 'profile_image_id'])->where('id', $userId)
-        ->with(['isAuthUserFollows','profilePic:id,url'])
+        $user = User::select(['id','name', 'profile_image_id'])
+        ->where('id', $userId)
+        ->with(['isAuthUserFollows','profilePic'])
         ->withCount(['followers', 'followings'])->get();
 
         $user = $user->toArray()[0];
@@ -36,19 +37,14 @@ class UserController extends Controller
 
     public function update(Request $request)
     {
-        $data = $request->all();
         $auth_user = $request->user();
 
-        $validator = Validator::make($data, [
+        $data = $this->isValid($request, [
             'name' => 'required|string|min:1|max:200',
             'email' => "required|email|unique:users,email,{$auth_user->id}|max:200",
             'password' => "required|current_password|max:200"
         ]);
-
-        if($validator->fails())
-            return response()->json(['errors' => $validator->messages()], 422);
         
-       
        $auth_user->update($data);
        $auth_user = $auth_user->only(['id', 'name', 'email']);
 
@@ -78,17 +74,20 @@ class UserController extends Controller
         ]);
     }
 
-    public function searchUsers($search) {
-        $users = User::where('name','like', '%'. $search .'%')
-       ->paginate(6,['id','name','img']);
+    public function searchUsers(string $search) 
+    {
+        $users = User::where('name','like', "%$search%")
+        ->with(['profilePic'])
+        ->cursorPaginate(6,['id','name', 'profile_image_id']);
 
-        return response()->json(
-            $users
-        ,200);
+        return response()->json([
+            'users' => $users->items(),
+            'nextCursor' => $users->nextCursor()?->encode()
+        ]);
     }
 
-    public function userPosts (int $id) {
-       
+    public function userPosts (int $id) 
+    {
        $postController = new PostController();
        $posts = $postController->posts()->where('user_id',$id)
        ->latest()->paginate(10);

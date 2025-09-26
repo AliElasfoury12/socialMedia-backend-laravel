@@ -6,6 +6,7 @@ use App\Http\Resources\PostResource;
 use App\Jobs\DeleteImagesJob;
 use App\Jobs\SendLikeNotifiction;
 use App\Models\Post;
+use App\Repositories\PostRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -32,14 +33,22 @@ class PostController extends Controller
         return $posts;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $result = $this->posts()->latest()->cursorPaginate(10);  
-        $result = $result->toArray();
-        $posts = $result['data'];
-        $nextCursor = $result['next_cursor']; 
-        $posts = $this->formatResponse($posts);
-        return response()->json(compact('posts', 'nextCursor')); 
+        // $result = $this->posts()->orderByDesc('id')->cursorPaginate(10);  
+        // $result = $result->toArray();
+        // $posts = $result['data'];
+        // $nextCursor = $result['next_cursor']; 
+        // $posts = $this->formatResponse($posts);
+
+        $postsRepository = new PostRepository;
+        $posts = $postsRepository->getPosts(99, 10, $request->cursor);
+        $nextCursor = $postsRepository->get_next_cursor();
+
+        return response()->json([
+            'posts' => $posts,
+            'nextCursor' => $nextCursor
+        ]); 
     }
 
     public function formatResponse (array $posts): array 
@@ -55,7 +64,7 @@ class PostController extends Controller
                 $post['shared_post'] = $post['shared_post'][0];
                 $post['shared_post']['user']['is_auth_user_follows'] = $post['shared_post']['user']['is_auth_user_follows'] ? true : false;
             }else 
-                $post['shared_post'] = new stdClass;
+                $post['shared_post'] = null;
     
         }
         return $posts;
@@ -176,11 +185,11 @@ class PostController extends Controller
     public function searchPosts(string $search) 
     {
         $posts = $this->posts()
-        ->where('post','like', "%$search%")
-        ->latest()->paginate(10,['id','post','created_at']);
+        ->where('content','like', "%$search%")
+        ->latest()->cursorPaginate(10,['id','content','created_at']);
 
-        return response()->json(
-            PostResource::collection($posts)
-        ,200);
+        $posts = $this->formatResponse($posts->items());
+
+        return response()->json(['posts' => $posts]);
     }
 }

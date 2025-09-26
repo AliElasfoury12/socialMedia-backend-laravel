@@ -6,43 +6,35 @@ use App\Http\Resources\CommentResource;
 use App\Models\Comment;
 use App\Jobs\SendCommentNotifiction;
 use App\Models\Post;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 
 class CommentController extends Controller
 {
-    public function index (string $postId)  
+    public function index (Request $request, int $postId)  
     {
-        $result = Comment::where('post_id', $postId)
+        $comments = Comment::where('post_id', $postId)
         ->with(['user'])->latest()
         ->cursorPaginate(5,['id','user_id','post_id','content','created_at']);
 
-        $result = $result->toArray();
-        $comments = $result['data'];
-        $nextCursor = $result['next_cursor']; 
-
-        return response()->json(compact('comments', 'nextCursor'));
+        return response()->json([
+            'comments' => $comments->items(),
+            'nextCursor' => $comments->nextCursor()?->encode()
+        ]);
     }
 
     public function store(Request $request, int $postId)
     {
-        $data = [
-            'content' => $request['content']
-        ];
-
-        $validator = Validator::make($data, [
-            'content' => 'required|min:1|max:500'
-        ]);
-
-        if($validator->fails())
-            return response()->json(['errors' => $validator->messages()], 422);
-        
-        $data['post_id'] = $postId;
+        $data = $this->isValid($request,['content' => 'required|min:1|max:500']);       
         $data['user_id'] = $request->user()->id;
+        $data['post_id'] = $postId;
 
         $comment = Comment::create($data);
-        
+        unset($comment->updated_at);
+
         SendCommentNotifiction::dispatchAfterResponse($postId, $request->user(), $comment);
 
         return response()->json([
@@ -53,16 +45,7 @@ class CommentController extends Controller
 
     public function update(Request $request, string $commentId)
     {
-       $data = [
-            'content' => $request['content']
-        ];
-
-        $validator = Validator::make($data, [
-            'content' => 'required|min:1|max:500'
-        ]);
-
-        if($validator->fails())
-            return response()->json(['errors' => $validator->messages()], 422);
+        $data = $this->isValid($request,['content' => 'required|min:1|max:500']);       
 
         Comment::where('id', $commentId)
         ->where('user_id', $request->user()->id)
@@ -84,5 +67,17 @@ class CommentController extends Controller
             'message' => 'Comment deleted successfully',
             'comment' => $comment
         ]);
+    }
+
+     private function isValid (Request $request, array $rules): array 
+    {
+        $data = $request->all();
+
+        $validator = Validator::make($data, $rules);
+
+        if($validator->fails()) {
+            throw new HttpResponseException(new JsonResponse(['errors' => $validator->errors()], 422));
+        }
+        return $data;
     }
 }
