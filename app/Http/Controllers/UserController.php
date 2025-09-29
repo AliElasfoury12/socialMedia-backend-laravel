@@ -5,13 +5,10 @@ namespace App\Http\Controllers;
 use App\Http\Resources\UserResource;
 use App\Jobs\DeleteImagesJob;
 use App\Models\User;
-use Illuminate\Http\Exceptions\HttpResponseException;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Response;
-use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
@@ -133,15 +130,5 @@ class UserController extends Controller
         ]);
     }
 
-    private function isValid (Request $request, array $rules): array 
-    {
-        $data = $request->all();
-
-        $validator = Validator::make($data, $rules);
-
-        if($validator->fails()) {
-            throw new HttpResponseException(new JsonResponse(['errors' => $validator->errors()], 422));
-        }
-        return $data;
-    }
+   
 }

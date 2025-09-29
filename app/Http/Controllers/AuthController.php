@@ -2,29 +2,26 @@
 
 namespace App\Http\Controllers;
 
+use App\JWT_Token\JWT_Token;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
-    public function register(Request $request, User $user)
+    public function register(Request $request)
     {
-        $data = $request->all();
-        $validator = Validator::make($data, [
+        $data = $this->isValid($request, [
             'name' => 'required|string|max:100',
             'email' =>'required|email|unique:users,email|max:100',
-            'password' => 'required|min:4|confirmed|max:100',
+            'password' => 'required|confirmed|min:4|max:100',
         ]);
 
-        if($validator->fails() ){
-            return response()->json(['errors' => $validator->messages()], 422);
-        }
+        $user = User::create($data);
 
-        $user = $user->create($data);
+        unset($user->password, $user->updated_at);
 
         return response()->json([
             'user' => $user,
@@ -34,15 +31,10 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $data = $request->all();
-
-        $validator = Validator::make($data, [
+        $this->isValid($request, [
             'email' =>'required|email|max:100',
             'password' => 'required|min:4|max:100'
         ]);
-
-        if($validator->fails())
-            return response()->json(['errors' => $validator->messages()], 422);
 
         $user = User::select(['id', 'name', 'email', 'password', 'profile_image_id'])
         ->where('email', $request->email)->with(['profilePic'])->first();
@@ -55,7 +47,10 @@ class AuthController extends Controller
             ],422);
         }
 
-        $token = $user->createToken('auth_token',['*'], now()->addDays(7))->plainTextToken;
+        $jwt = new JWT_Token;
+        $token = $jwt->CreatToken($user->toArray(),7 * 24 * 60 * 60 );
+        //$token = $user->createToken('auth_token',['*'], now()->addDays(7))->plainTextToken;
+
         unset($user->password, $user->profile_image_id);
 
         return response()->json([
@@ -78,14 +73,14 @@ class AuthController extends Controller
 
     public function changePassword (Request $request) {
 
-        $request->validate([
+        $this->isValid($request, [
             'current_password' => 'required|string',
             'new_password' => 'required|min:4|confirmed'
         ]);
 
         $user = $request->user();
 
-        if (!Hash::check($request->current_password, $user->password)) {
+        if (!Hash::check($request->current_password,$user->password)) {
             return response()->json([
                 'errors' => [
                     'current_password' => ['current password is wrong']
@@ -93,8 +88,7 @@ class AuthController extends Controller
             ],401);
         }
 
-        $user->password = bcrypt($request->new_password);
-        $user->save();
+        $user->update(['password' => $request->new_password]);
 
         return response()->json([
             'message' => 'Password Updated Successfully',

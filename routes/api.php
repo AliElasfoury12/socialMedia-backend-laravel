@@ -59,7 +59,7 @@ $notifications_routes = function ()
     });  
 };
 
-Route::group(['middleware'=>['auth:sanctum','throttle:api']],function () 
+Route::group(['middleware'=>['throttle:api','jwt_auth']],function () 
     use ($post_routes, $comments_routes, $images_routes, $users_routes, $notifications_routes)
 {
     $post_routes();

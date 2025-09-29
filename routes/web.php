@@ -16,9 +16,14 @@ use function React\Promise\all;
 
 Route::get('/', function (Request $request) 
 {
-   $notifcationscontoller = new NotificationsController;
-   $notifications = $notifcationscontoller->notificationsPost(417,0); 
-   echo "<pre>";
-   print_r([$notifications->content()]);
-   echo"</pre>";
+   // $notifcationscontoller = new NotificationsController;
+   // $notifications = $notifcationscontoller->notificationsPost(417,0); 
+   // echo "<pre>";
+   // print_r([$notifications->content()]);
+   // echo"</pre>";
+   $user = User::where('id',99)->first();
+    echo "<pre>";
+    print_r([$user->toArray(), now()->addDays(7)]);
+    echo"</pre>";
+
 });

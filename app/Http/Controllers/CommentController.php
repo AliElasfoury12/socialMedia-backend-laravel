@@ -68,16 +68,4 @@ class CommentController extends Controller
             'comment' => $comment
         ]);
     }
-
-     private function isValid (Request $request, array $rules): array 
-    {
-        $data = $request->all();
-
-        $validator = Validator::make($data, $rules);
-
-        if($validator->fails()) {
-            throw new HttpResponseException(new JsonResponse(['errors' => $validator->errors()], 422));
-        }
-        return $data;
-    }
 }

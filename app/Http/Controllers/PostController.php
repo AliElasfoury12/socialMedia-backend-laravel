@@ -186,10 +186,14 @@ class PostController extends Controller
     {
         $posts = $this->posts()
         ->where('content','like', "%$search%")
-        ->latest()->cursorPaginate(10,['id','content','created_at']);
+        ->latest()->cursorPaginate(5,['id','content','created_at']);
 
+        $nextCursor = $posts->nextCursor()?->encode();
         $posts = $this->formatResponse($posts->items());
 
-        return response()->json(['posts' => $posts]);
+        return response()->json([
+            'posts' => $posts,
+            'nextCursor' => $nextCursor
+        ]);
     }
 }

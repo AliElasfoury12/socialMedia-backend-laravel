@@ -87,8 +87,10 @@ class PostRepository
         $FK = 'post_id';
 
         foreach ($posts_images as $image) {
-            if(isset($post_images_index[$image[$FK]])) $post_images_index[$image[$FK]][] = $image;
-            else $post_images_index[$image[$FK]] = [$image];
+            $newImage = $image;
+            unset($newImage['post_id']);
+            if(isset($post_images_index[$image[$FK]])) $post_images_index[$image[$FK]][] = $newImage;
+            else $post_images_index[$image[$FK]] = [$newImage];
         }
 
         return $post_images_index;

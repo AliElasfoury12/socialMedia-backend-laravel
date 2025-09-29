@@ -5,8 +5,9 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use App\JWT_Token\JWT_Token;
 
-class owner
+class jwt_auth
 {
     /**
      * Handle an incoming request.
@@ -15,10 +16,9 @@ class owner
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if($request){
-           
-
-        }
+        $token = $request->bearerToken();
+        $jwt = new JWT_Token;
+        $request->jwt_user = $jwt->CheckToken($token);
         return $next($request);
     }
 }
