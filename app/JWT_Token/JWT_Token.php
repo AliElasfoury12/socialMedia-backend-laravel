@@ -6,27 +6,55 @@ use Exception;
 
 class JWT_Token {
 
-    public function CreatToken (array $payload, int $validation_time): string 
+    public function CreatToken (object $payload, string $validation_time): string 
     {
-        $secretKey = $_ENV['JWT_SECRET'];
+        $validation_time = $this->timeToSeconds($validation_time);
         $b64Header = $this->header_encode();
         $b64Payload = $this->payload_encode($payload, $validation_time);
-        $b64Signature = $this->signature("$b64Header.$b64Payload", $secretKey);
+
+        $secretKey = $_ENV['JWT_SECRET'];
+        $b64Signature = $this->signature("$b64Header.$b64Payload",$secretKey);
 
         return "$b64Header.$b64Payload.$b64Signature";
     }
 
-    public function CheckToken (string $jwt_token ) 
-    {
-        $secretKey = $_ENV['JWT_SECRET'];
-        
+    public function CheckToken (string $jwt_token) 
+    {        
         $parts = explode('.', $jwt_token);
         if(count($parts) !== 3) 
             throw new Exception('Invalid Token'); 
 
         $this->check_header($parts[0]);
+
+        $secretKey = $_ENV['JWT_SECRET'];
         $this->check_signature($parts, $secretKey);
+
         return $this->check_payload($parts[1]);
+    }
+
+    private function timeToSeconds (string $time): int 
+    {
+        if(str_contains($time,'day')){
+            $time = str_replace(' day', '', $time);
+            return $time * 24 * 60 * 60;
+        }
+
+        if(str_contains($time,'hour')){
+            $time = str_replace(' hour', '', $time);
+            return $time * 60 * 60;
+        }
+
+        if(str_contains($time,'min')){
+            $time = str_replace(' min', '', $time);
+            return $time * 60 * 60;
+        }
+
+        if(str_contains($time,'mon')){
+            $time = str_replace(' mon', '', $time);
+            return $time * 30 * 24 * 60 * 60;
+        }
+
+        throw new Exception('Invalid Time Format');
     }
 
     private function check_header (string $b64Header): void 
@@ -40,12 +68,12 @@ class JWT_Token {
     private function check_payload (string $b64Payload) 
     {
         $payloadJson = $this->base64url_decode($b64Payload);
-        $payload = json_decode($payloadJson, true);
-
-        if (!isset($payload['expires_at'])) 
+        $payload = json_decode($payloadJson);
+        
+        if (!$payload?->expires_at) 
             throw new Exception('Invalid Token'); 
 
-        if (isset($payload['expires_at']) && time() >= $payload['expires_at']) 
+        if ($payload?->expires_at && time() >= $payload->expires_at) 
             throw new Exception('Token expired');
 
         return $payload;
@@ -69,12 +97,11 @@ class JWT_Token {
         return  $this->base64url_encode(json_encode($header));
     }
 
-    private function payload_encode (array $payload, int $validationTime): string 
+    private function payload_encode (object $payload, int $validationTime): string 
     {
         $now = time();
-        $payload = array_merge([
-            'created_at' => $now, 'expires_at' => $now + $validationTime
-        ], $payload);
+        $payload->created_at = $now;
+        $payload->expires_at = $now + $validationTime;
         return $this->base64url_encode(json_encode($payload));
     }
 

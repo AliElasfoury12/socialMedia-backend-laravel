@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\ValidationErrorException;
 use App\Http\Resources\PostResource;
 use App\Jobs\DeleteImagesJob;
 use App\Jobs\SendLikeNotifiction;
@@ -9,17 +10,10 @@ use App\Models\Post;
 use App\Repositories\PostRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
-use stdClass;
 
 class PostController extends Controller
 {
-    private ImagesController $imagesController;
-
-    public function __construct() {
-        $this->imagesController = new ImagesController;
-    }
-
+   
     public function posts () 
     {
         $posts = Post::select(['id','user_id','content','created_at'])
@@ -77,19 +71,14 @@ class PostController extends Controller
 
     public function store(Request $request)
     {
-        if(!$request['content'] && !$request->allFiles() ){
-            return response()->json([
-                'message' => 'you must add post content or one image' 
-            ], 422);
-        }
+        $content = $request['content'] ?? '';
+        $images = $request->allFiles();
 
-        $data = [
-            'content' => $request['content'] ?? '',
-            'user_id' => $request->user()->id
-        ];
+        $data = $this->valdaitePost($request,$content,$images);
 
         $post = Post::create($data);
-        $post->post_imgs = $this->storeImages($request, $post);
+
+        $this->storeImages($images,$post->id);
        
         return response()->json([
             'message' => 'post created Successfully',
@@ -97,57 +86,77 @@ class PostController extends Controller
         ]);
     }
 
-    private function storeImages (Request $request,Post $post): array
+    public function update(Request $request,int $post_id)
     {
+        $content = $request['content'] ?? '';
         $images = $request->allFiles();
-        if($images) $images = $this->imagesController->storePostImages($images, $post->id);
-        return $images;
-    }
 
-    public function update(Request $request, Post $post)
-    {
-        $this->authorize('update', $post);
+        $data = $this->valdaitePost($request,$content,$images);
 
-        $data = [
-            'content' => $request['content'] ?? '',
-            'user_id' => $request->user()->id
-        ];
+        Post::where('id',$post_id)->update($data);
 
-        $post->update($data);
-        $postImages = $this->storeImages($request, $post);
+        $postImages = $this->storeImages($images,$post_id);
 
         return response()->json([
             'message' => 'Post Updated successfully',
             'post' => [
-                'content' => $post->content,
+                'content' => $content,
                 'post_imgs' => $postImages
             ]
         ]);
     }
 
-    public function destroy(Post $post)
+    public function destroy(Request $request,int $post_id)
     {
-        $this->authorize('delete', $post);
+        $isSucces = Post::where('id', $post_id)
+        ->where('user_id', $request->jwt_user->id)
+        ->delete();
 
-        DeleteImagesJob::dispatchSync($post->id, 'posts');
+        if (!$isSucces) 
+            throw new ValidationErrorException(['message' => 'Something Went Wrong']);
 
-        $post->delete();
+        DeleteImagesJob::dispatchAfterResponse($post_id, 'posts');
 
         return response()->json([
             'message' => 'post deleted successfully'
         ]);
     }
 
-    public function sharePost (Request $request, Post $post) 
+    private function storeImages (array $images,string $post_id): array
     {
-        $sharedPostId = $post->id;
+        if($images) {
+            $imageController  = new ImagesController;
+            $images = $imageController->storePostImages($images,$post_id);
+        }
+        return $images;
+    }
+
+    private function valdaitePost (Request $request, string $content, array $images) 
+    {
+        if(!$content && !$images){
+            throw new ValidationErrorException([
+                'message' => 'you must add post content or one image' 
+            ]);
+        }
+
+        return [
+            'content' => $content,
+            'user_id' => $request->jwt_user->id
+        ];
+    }
+
+
+    public function sharePost (Request $request, int $sharedPostId) 
+    {
+        $content = $request['content'] ?? '';
 
         $data = [
-            'content' => $request['content'] ?? '',
-            'user_id' => $request->user()->id
+            'content' => $content,
+            'user_id' => $request->jwt_user->id
         ];
        
         $post = Post::create($data);
+
         $post->sharedPost()->attach($sharedPostId);
 
         return response()->json([
@@ -159,7 +168,7 @@ class PostController extends Controller
     public function like(Request $request, Post $post) 
     {
         $message = '';
-        $auth = $request->user();
+        $auth = $request->jwt_user;
 
         $exists = DB::table('likes')
         ->where('user_id', $auth->id)

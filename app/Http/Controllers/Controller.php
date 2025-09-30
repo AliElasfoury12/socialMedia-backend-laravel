@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\ValidationErrorException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -18,9 +19,9 @@ abstract class Controller
 
         $validator = Validator::make($data, $rules);
 
-        if($validator->fails()) {
-            throw new HttpResponseException(new JsonResponse(['errors' => $validator->errors()], 422));
-        }
+        if($validator->fails()) 
+            throw new ValidationErrorException($validator->errors());
+        
         return $data;
     }
 }

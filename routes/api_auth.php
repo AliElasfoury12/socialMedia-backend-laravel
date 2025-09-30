@@ -3,7 +3,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ForgetPasswordController;
 use Illuminate\Support\Facades\Route;
 
-Route::group(['middleware'=>['auth:sanctum','throttle:api']], function () {
+Route::group(['middleware'=>['jwt_auth','throttle:api']], function () {
     Route::controller(AuthController::class)->group(function () 
     {
         Route::get('logout','logout');

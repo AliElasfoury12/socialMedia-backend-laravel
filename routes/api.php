@@ -10,14 +10,14 @@ use Illuminate\Support\Facades\Route;
 
 $post_routes = function ()   
 {
-    Route::apiResource('posts', PostController::class);
     Route::controller(PostController::class)->group(function (): void 
     {
-        Route::post('posts/{post}/share','sharePost');
-        Route::get('posts/{post}/like', 'like');
-        Route::get('search-posts/{search}', 'searchPosts');
+        Route::post('posts/share/{post}','sharePost');
+        Route::get('posts/like/{post}', 'like');
+        Route::get('posts/search/{search}', 'searchPosts');
     });
 
+    Route::apiResource('posts', PostController::class);
 };
 
 $comments_routes = function () 

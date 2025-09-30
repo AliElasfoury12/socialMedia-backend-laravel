@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\ValidationErrorException;
 use App\JWT_Token\JWT_Token;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
@@ -40,18 +40,15 @@ class AuthController extends Controller
         ->where('email', $request->email)->with(['profilePic'])->first();
         
         if(!$user || !Hash::check($request->password, $user->password)){
-            return response()->json([
-                "errors" =>[
-                    'password' =>  ["Email or Password is Wrong"]
-                ]
-            ],422);
+            throw new ValidationErrorException([
+                'email' =>  ["Email or Password is Wrong"]
+            ]);
         }
 
         $jwt = new JWT_Token;
-        $token = $jwt->CreatToken($user->toArray(),7 * 24 * 60 * 60 );
-        //$token = $user->createToken('auth_token',['*'], now()->addDays(7))->plainTextToken;
+        $token = $jwt->CreatToken($user,'7 day');
 
-        unset($user->password, $user->profile_image_id);
+        unset($user->password, $user->updated_at, $user->expires_at);
 
         return response()->json([
             'message' => 'User loggedin successfully',
@@ -60,16 +57,11 @@ class AuthController extends Controller
         ]);
     }
 
-    public function user (Request $request) 
-    {
-        return $request->user()->toJson();
-    }
-
-    public function logout(Request $request)
-    {
-        $request->user()->currentAccessToken()->delete();
-        return response()->json(['message' => 'Successfully logged out']);
-    }
+    // public function logout(Request $request)
+    // {
+    //     $request->user()->currentAccessToken()->delete();
+    //     return response()->json(['message' => 'Successfully logged out']);
+    // }
 
     public function changePassword (Request $request) {
 
@@ -78,17 +70,16 @@ class AuthController extends Controller
             'new_password' => 'required|min:4|confirmed'
         ]);
 
-        $user = $request->user();
+        $user = $request->jwt_user;
 
         if (!Hash::check($request->current_password,$user->password)) {
-            return response()->json([
-                'errors' => [
-                    'current_password' => ['current password is wrong']
-                ],
-            ],401);
+            throw new ValidationErrorException([
+                'current_password' => ['current password is wrong']
+            ]);
         }
 
-        $user->update(['password' => $request->new_password]);
+        User::where('id', $user->id)
+        ->update(['password' => Hash::make($request->new_password)]);
 
         return response()->json([
             'message' => 'Password Updated Successfully',
