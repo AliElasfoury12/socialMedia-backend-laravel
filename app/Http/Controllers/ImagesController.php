@@ -9,7 +9,6 @@ use App\Models\ProfilePic;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 class ImagesController extends Controller
@@ -27,20 +26,9 @@ class ImagesController extends Controller
         return array_values($images);  
     }
 
-    public function deletePostImages (Request $request, Post $post) 
+    public function deletePostImages (Request $request) 
     {
-        if($post->user_id != $request->user()->id) {
-            return response()->json([
-                'error' => 'unauthorized',
-            ],401);
-        }
-
-        $validator = Validator::make($request->all(), ['images' => "required|array"]);
-        if($validator->fails()){
-            return response()->json([
-                'errors' => $validator->errors(),
-            ],422);
-        }
+        $this->isValid($request,['images' => "required|array"]);
         
         $imagesIds = [];
 
@@ -51,10 +39,10 @@ class ImagesController extends Controller
 
         PostImg::whereIn('id', $imagesIds)->delete();
 
-        return response()->json([
+        return $this->response([
             'message' => 'Images Deleted successfully',
             'images' => $request->images
-        ],200);
+        ]);
     }
 
     public function storeImage ($img, string $path): string 
@@ -65,26 +53,4 @@ class ImagesController extends Controller
 
         return $imageName;
     }
-
-    public function changrProfilePic (Request $request, User $user) {
-        $valdated = $request->validate([
-            'img' => 'required|image'
-        ]);
-
-        $imageName = $this->storeImage($request->img, 'profile/');
-        $valdated['img'] = $imageName ;
-        
-        $user->update($valdated);
-
-        ProfilePic::create([
-            'user_id' => $user->id,
-            'img' => $imageName
-        ]);
-
-        return response()->json([
-            'message' => 'image updated successfully',
-            'user' => new UserResource($user)
-        ],200);
-    }
-
 }

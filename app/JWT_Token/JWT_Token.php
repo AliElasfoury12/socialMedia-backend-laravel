@@ -6,33 +6,39 @@ use Exception;
 
 class JWT_Token {
 
-    public function CreatToken (object $payload, string $validation_time): string 
+    public static function CreatToken (object $payload, string $validation_time): string 
     {
-        $validation_time = $this->timeToSeconds($validation_time);
-        $b64Header = $this->header_encode();
-        $b64Payload = $this->payload_encode($payload, $validation_time);
+        $validation_time = self::timeToSeconds($validation_time);
+        $b64Header = self::header_encode();
+        $b64Payload = self::payload_encode($payload, $validation_time);
 
         $secretKey = $_ENV['JWT_SECRET'];
-        $b64Signature = $this->signature("$b64Header.$b64Payload",$secretKey);
+        $b64Signature = self::signature("$b64Header.$b64Payload",$secretKey);
 
         return "$b64Header.$b64Payload.$b64Signature";
     }
 
-    public function CheckToken (string $jwt_token) 
+    public static function CheckToken (string $jwt_token, bool $is_updating = false) 
     {        
         $parts = explode('.', $jwt_token);
         if(count($parts) !== 3) 
             throw new Exception('Invalid Token'); 
 
-        $this->check_header($parts[0]);
+        self::check_header($parts[0]);
 
         $secretKey = $_ENV['JWT_SECRET'];
-        $this->check_signature($parts, $secretKey);
+        self::check_signature($parts, $secretKey);
 
-        return $this->check_payload($parts[1]);
+        return self::check_payload($parts[1],$is_updating);
     }
 
-    private function timeToSeconds (string $time): int 
+    public static function UpdateToken (string $old_jwt_token, string $validation_time): string  
+    {
+        $payload = self::CheckToken($old_jwt_token,true);
+        return self::CreatToken($payload,$validation_time);
+    }
+
+    private static function timeToSeconds (string $time): int 
     {
         if(str_contains($time,'day')){
             $time = str_replace(' day', '', $time);
@@ -46,7 +52,7 @@ class JWT_Token {
 
         if(str_contains($time,'min')){
             $time = str_replace(' min', '', $time);
-            return $time * 60 * 60;
+            return $time * 60;
         }
 
         if(str_contains($time,'mon')){
@@ -57,33 +63,33 @@ class JWT_Token {
         throw new Exception('Invalid Time Format');
     }
 
-    private function check_header (string $b64Header): void 
+    private static function check_header (string $b64Header): void 
     {
-        $headerJson = $this->base64url_decode($b64Header);
+        $headerJson = self::base64url_decode($b64Header);
         $header = json_decode($headerJson, true);
         if (!isset($header['algo']) || $header['algo'] !== 'HS256') 
             throw new Exception('Invalid Token'); 
     }
 
-    private function check_payload (string $b64Payload) 
+    private static function check_payload (string $b64Payload,bool $is_updating) 
     {
-        $payloadJson = $this->base64url_decode($b64Payload);
+        $payloadJson = self::base64url_decode($b64Payload);
         $payload = json_decode($payloadJson);
         
         if (!$payload?->expires_at) 
             throw new Exception('Invalid Token'); 
 
-        if ($payload?->expires_at && time() >= $payload->expires_at) 
-            throw new Exception('Token expired');
+        if ($payload?->expires_at && time() >= $payload->expires_at && !$is_updating) 
+            throw new Exception('Token Expired');
 
         return $payload;
     }
 
-    private function check_signature (array $parts, string $secretKey) 
+    private static function check_signature (array $parts, string $secretKey) 
     {
         [$b64Header, $b64Payload, $b64Signature] = $parts;
 
-        $signature = $this->base64url_decode($b64Signature);
+        $signature = self::base64url_decode($b64Signature);
 
         $expectedSig = hash_hmac('sha256', "$b64Header.$b64Payload", $secretKey, true);
 
@@ -91,31 +97,31 @@ class JWT_Token {
             throw new Exception('Invalid Token'); 
     }
 
-    private function header_encode (): string 
+    private static function header_encode (): string 
     {
         $header = ['algo' => 'HS256', 'type' => 'JWT'];
-        return  $this->base64url_encode(json_encode($header));
+        return  self::base64url_encode(json_encode($header));
     }
 
-    private function payload_encode (object $payload, int $validationTime): string 
+    private static function payload_encode (object $payload, int $validationTime): string 
     {
         $now = time();
         $payload->created_at = $now;
         $payload->expires_at = $now + $validationTime;
-        return $this->base64url_encode(json_encode($payload));
+        return self::base64url_encode(json_encode($payload));
     }
 
-    private function signature (string $data, string $secretKey) 
+    private static function signature (string $data, string $secretKey) 
     {
         $signature = hash_hmac('sha256', $data, $secretKey, true);
-        return $this->base64url_encode($signature);
+        return self::base64url_encode($signature);
     }
 
-    private function base64url_encode(string $data): string {
+    private static function base64url_encode(string $data): string {
         return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
     }
 
-    private function base64url_decode(string $data): string 
+    private static function base64url_decode(string $data): string 
     {
         $remainder = strlen($data) % 4;
         if ($remainder) $data .= str_repeat('=', 4 - $remainder);

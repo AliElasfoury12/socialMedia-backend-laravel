@@ -34,11 +34,10 @@ $images_routes = function ()
 
 $users_routes = function () 
 {
-    Route::apiResource('users', UserController::class)->only(['index', 'show']);
-
     Route::controller(UserController::class)->group(function () 
     {
-        Route::Put('users', 'update');
+        Route::get('users/{user}', 'show');
+        Route::put('users', 'update');
         Route::delete('users', 'destroy');
         Route::get('search-users/{search}','searchUsers');
         Route::get('user-posts/{id}','userPosts');

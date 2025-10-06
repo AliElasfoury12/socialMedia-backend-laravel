@@ -6,9 +6,9 @@ use Illuminate\Support\Facades\Route;
 Route::group(['middleware'=>['jwt_auth','throttle:api']], function () {
     Route::controller(AuthController::class)->group(function () 
     {
-        Route::get('logout','logout');
+        //Route::get('logout','logout');
         Route::get('user','user');
-        Route::post('changePassword', 'changePassword');
+        Route::post('changePassword','changePassword');
     });
 });
 

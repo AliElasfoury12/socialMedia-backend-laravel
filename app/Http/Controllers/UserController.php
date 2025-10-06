@@ -7,17 +7,9 @@ use App\Jobs\DeleteImagesJob;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Response;
 
 class UserController extends Controller
 {
-    public function index()
-    {
-        $users = User::paginate(15,['id','name','email']);
-        return response()->json(UserResource::collection($users));
-    }
-
     public function show(string $userId)
     {
         $user = User::select(['id','name', 'profile_image_id'])
@@ -29,7 +21,7 @@ class UserController extends Controller
         $user['is_auth_user_follows'] = count($user['is_auth_user_follows']) == 0 ? false : true;  
         unset($user->profile_image_id);
 
-        return response()->json(compact('user'));
+        return $this->response(['user' => $user]);
     }
 
     public function update(Request $request)

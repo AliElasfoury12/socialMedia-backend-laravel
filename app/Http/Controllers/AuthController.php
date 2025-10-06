@@ -23,9 +23,9 @@ class AuthController extends Controller
 
         unset($user->password, $user->updated_at);
 
-        return response()->json([
-            'user' => $user,
+        return $this->response([
             'message' => 'User created successfully',
+            'user' => $user,
         ]);
     }
 
@@ -39,18 +39,17 @@ class AuthController extends Controller
         $user = User::select(['id', 'name', 'email', 'password', 'profile_image_id'])
         ->where('email', $request->email)->with(['profilePic'])->first();
         
-        if(!$user || !Hash::check($request->password, $user->password)){
+        if(!$user || !Hash::check($request->password,$user->password)){
             throw new ValidationErrorException([
                 'email' =>  ["Email or Password is Wrong"]
             ]);
         }
 
-        $jwt = new JWT_Token;
-        $token = $jwt->CreatToken($user,'7 day');
+        $token = JWT_Token::CreatToken($user,'1 min');
 
         unset($user->password, $user->updated_at, $user->expires_at);
 
-        return response()->json([
+        return $this->response([
             'message' => 'User loggedin successfully',
             'user' =>  $user,
             'token' => $token
@@ -63,14 +62,14 @@ class AuthController extends Controller
     //     return response()->json(['message' => 'Successfully logged out']);
     // }
 
-    public function changePassword (Request $request) {
-
+    public function changePassword (Request $request) 
+    {
         $this->isValid($request, [
             'current_password' => 'required|string',
             'new_password' => 'required|min:4|confirmed'
         ]);
 
-        $user = $request->jwt_user;
+        $user = $request->user();
 
         if (!Hash::check($request->current_password,$user->password)) {
             throw new ValidationErrorException([
@@ -78,12 +77,18 @@ class AuthController extends Controller
             ]);
         }
 
-        User::where('id', $user->id)
-        ->update(['password' => Hash::make($request->new_password)]);
+        $new_hash_password = Hash::make($request->new_password);
 
-        return response()->json([
+        User::where('id', $user->id)
+        ->update(['password' => $new_hash_password]);
+
+        $user->password = $new_hash_password;
+
+        $new_jwt_token = JWT_Token::CreatToken($user, '7 day');
+
+        return $this->response([
             'message' => 'Password Updated Successfully',
+            'new_jwt_token' => $new_jwt_token
         ]);
     }
-
 }

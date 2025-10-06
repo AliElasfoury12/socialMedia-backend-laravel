@@ -2,42 +2,45 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\CommentResource;
 use App\Models\Comment;
 use App\Jobs\SendCommentNotifiction;
-use App\Models\Post;
-use Illuminate\Http\Exceptions\HttpResponseException;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Validator;
 
 class CommentController extends Controller
 {
-    public function index (Request $request, int $postId)  
+    public function index (int $postId)  
     {
         $comments = Comment::where('post_id', $postId)
-        ->with(['user'])->latest()
-        ->cursorPaginate(5,['id','user_id','post_id','content','created_at']);
+        ->with(['user'])->orderByDesc('id')
+        ->cursorPaginate(5,['id','user_id','content','created_at']);
 
-        return response()->json([
+        return $this->response([
             'comments' => $comments->items(),
             'nextCursor' => $comments->nextCursor()?->encode()
         ]);
     }
 
-    public function store(Request $request, int $postId)
+    public function store(Request $request, int $post_id)
     {
-        $data = $this->isValid($request,['content' => 'required|min:1|max:500']);       
-        $data['user_id'] = $request->user()->id;
-        $data['post_id'] = $postId;
+        $data = $this->isValid($request,['content' => 'required|min:1|max:500']);
+        
+        $user = $request->user();
+        $data['user_id'] = $user->id;
+        $data['post_id'] = $post_id;
 
         $comment = Comment::create($data);
+
         unset($comment->updated_at);
 
-        SendCommentNotifiction::dispatchAfterResponse($postId, $request->user(), $comment);
+        $data = [
+            'post_id' => $post_id,
+            'user' => $user,
+            'comment' => $comment
+        ];
 
-        return response()->json([
+        SendCommentNotifiction::dispatchAfterResponse($data);
+
+        return $this->response([
             'messsage' => 'comment Created Successfully',
             'comment' => $comment
         ]);    
@@ -51,21 +54,20 @@ class CommentController extends Controller
         ->where('user_id', $request->user()->id)
         ->update($data);
 
-        return response()->json([
+        return $this->response([
             'messsage' => 'comment Updated Successfully',
             'commentContent' => $request['content']
         ]);
     }
 
-    public function destroy(Comment $comment)
+    public function destroy(int $comment_id)
     {
-        Gate::authorize('delete', $comment);
+        Comment::where('id', $comment_id)
+        ->where('user_id', auth()->id())
+        ->delete();
 
-        $comment->delete();
-
-        return response()->json([
+        return $this->response([
             'message' => 'Comment deleted successfully',
-            'comment' => $comment
         ]);
     }
 }

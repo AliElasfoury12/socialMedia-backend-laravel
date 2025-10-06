@@ -18,16 +18,16 @@ class SendCommentNotifiction implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public $postId;
+    public int $postId;
 
-    public $auth;
+    public object $auth;
 
-    public $comment;
-    public function __construct($postId, $auth, $comment)
+    public object $comment;
+    public function __construct(array $data)
     {
-        $this->postId = $postId; 
-        $this->auth = $auth;
-        $this->comment = $comment;  
+        $this->postId = $data['post_id']; 
+        $this->auth = $data['user'];
+        $this->comment = $data['comment']; 
         
     }
 
@@ -40,25 +40,32 @@ class SendCommentNotifiction implements ShouldQueue
 
         if($post->user_id == $this->auth->id) return;
 
-           $postUser = User::find($post->user_id);
-           $title = $this->auth->name. ' ' . 'Commented on Your Post';
-           $user = [
-                'name' =>$this->auth->name,
-                'img' => $this->auth->img
-           ];
-           $postUser->notify(new CommentNotification(
-            $title,
-            [ 
-                'id' => $post->id,
-                'post' => $post->post
-            ], 
-            $user,
-            [
-                'id' => $this->comment->id,
-                'comment' => $this->comment->comment,
-                'created_at' => $this->comment->created_at,
-                'user' => $user
-            ]));
+        $postUser = User::find($post->user_id);
+
+        $title = $this->auth->name. ' ' . 'Commented on Your Post';
+
+        $user = [
+            'name' => $this->auth->name,
+            'profile_pic' => $this->auth->profile_pic
+        ];
+
+        $post = [ 
+            'id' => $post->id,
+            'post' => $post->post
+        ];
+
+        $comment = [
+            'id' => $this->comment->id,
+            'comment' => $this->comment->comment,
+            'created_at' => $this->comment->created_at,
+            'user' => $user
+        ];
+
+        $postUser->notify(new CommentNotification(
+        $title,
+        $post, 
+        $user,
+        $comment));
         
     }
 }

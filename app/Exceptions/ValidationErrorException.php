@@ -9,9 +9,9 @@ class ValidationErrorException extends Exception
 {
     protected $errors;
 
-    public function __construct($errors)
+    public function __construct($errors, int $status = 422)
     {
-        parent::__construct('Validation Error', 422);
+        parent::__construct('Validation Error',$status);
         $this->errors = is_array($errors) ? $errors : $errors->toArray();
     }
 

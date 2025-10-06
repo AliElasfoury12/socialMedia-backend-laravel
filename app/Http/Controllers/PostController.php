@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\ValidationErrorException;
-use App\Http\Resources\PostResource;
 use App\Jobs\DeleteImagesJob;
 use App\Jobs\SendLikeNotifiction;
 use App\Models\Post;
@@ -13,7 +12,6 @@ use Illuminate\Support\Facades\DB;
 
 class PostController extends Controller
 {
-   
     public function posts () 
     {
         $posts = Post::select(['id','user_id','content','created_at'])
@@ -29,44 +27,45 @@ class PostController extends Controller
 
     public function index(Request $request)
     {
-        // $result = $this->posts()->orderByDesc('id')->cursorPaginate(10);  
-        // $result = $result->toArray();
-        // $posts = $result['data'];
-        // $nextCursor = $result['next_cursor']; 
-        // $posts = $this->formatResponse($posts);
+        // $posts = $this->posts()->orderByDesc('id')->cursorPaginate(10);  
+        // $nextCursor = $posts->nextCursor()?->encode(); 
+        // $posts = $this->formatResponse($posts->toArray()['data']);
 
         $postsRepository = new PostRepository;
-        $posts = $postsRepository->getPosts(99, 10, $request->cursor);
+        $posts = $postsRepository->getPosts($request->user()->id,10,$request->cursor);
         $nextCursor = $postsRepository->get_next_cursor();
 
-        return response()->json([
+        return $this->response([
             'posts' => $posts,
             'nextCursor' => $nextCursor
         ]); 
     }
 
-    public function formatResponse (array $posts): array 
+    public function formatResponse (array $posts): array
     {
         foreach ($posts as &$post) {
-            if (strlen($post['content']) > 80 ) 
-                $post['content'] = substr($post['content'],0,80).'...';
+            $post = (object) $post;
+
+            if (strlen($post->content) > 80 ) 
+                $post->content = substr($post->content,0,80).'...';
             
-            $post['is_liked_by_auth_user'] = $post['is_liked_by_auth_user'] ? true : false;
-            $post['user']['is_auth_user_follows'] = $post['user']['is_auth_user_follows'] ? true : false;
+            if(isset($post->is_liked_by_auth_user))
+                $post->is_liked_by_auth_user = $post->is_liked_by_auth_user ? true : false;
             
-            if($post['shared_post']) {
-                $post['shared_post'] = $post['shared_post'][0];
-                $post['shared_post']['user']['is_auth_user_follows'] = $post['shared_post']['user']['is_auth_user_follows'] ? true : false;
-            }else 
-                $post['shared_post'] = null;
-    
+            $post->user = (object) $post->user;
+            $post->user->is_auth_user_follows = $post->user->is_auth_user_follows ? true : false;
+            
+            if(isset($post->shared_post) && $post->shared_post) 
+                $post->shared_post = $this->formatResponse($post->shared_post)[0];
+            else if(isset($post->shared_post))
+                $post->shared_post = null;    
         }
         return $posts;
     }
 
     public function show(Post $post)
     {
-        return response()->json($post->content);
+        return $this->response($post->content);
     }
 
     public function store(Request $request)
@@ -78,9 +77,9 @@ class PostController extends Controller
 
         $post = Post::create($data);
 
-        $this->storeImages($images,$post->id);
-       
-        return response()->json([
+        $post->post_imgs =  $this->storeImages($images,$post->id);
+        
+        return $this->response([
             'message' => 'post created Successfully',
             'post' => $post
         ]);
@@ -93,11 +92,16 @@ class PostController extends Controller
 
         $data = $this->valdaitePost($request,$content,$images);
 
-        Post::where('id',$post_id)->update($data);
+        $is_updated = Post::where('id',$post_id)
+        ->where('user_id', $data['user_id'])
+        ->update(['content' => $data['content']]);
+
+        if (!$is_updated) 
+            throw new ValidationErrorException(['message' => 'Something Went Wrong']);
 
         $postImages = $this->storeImages($images,$post_id);
 
-        return response()->json([
+        return $this->response([
             'message' => 'Post Updated successfully',
             'post' => [
                 'content' => $content,
@@ -108,16 +112,16 @@ class PostController extends Controller
 
     public function destroy(Request $request,int $post_id)
     {
-        $isSucces = Post::where('id', $post_id)
-        ->where('user_id', $request->jwt_user->id)
+        $is_deleted = Post::where('id', $post_id)
+        ->where('user_id', $request->user()->id)
         ->delete();
 
-        if (!$isSucces) 
+        if (!$is_deleted) 
             throw new ValidationErrorException(['message' => 'Something Went Wrong']);
 
         DeleteImagesJob::dispatchAfterResponse($post_id, 'posts');
 
-        return response()->json([
+        return $this->response([
             'message' => 'post deleted successfully'
         ]);
     }
@@ -141,10 +145,10 @@ class PostController extends Controller
 
         return [
             'content' => $content,
-            'user_id' => $request->jwt_user->id
+            'user_id' => $request->user()->id
         ];
-    }
 
+    }
 
     public function sharePost (Request $request, int $sharedPostId) 
     {
@@ -152,7 +156,7 @@ class PostController extends Controller
 
         $data = [
             'content' => $content,
-            'user_id' => $request->jwt_user->id
+            'user_id' => $request->user()->id
         ];
        
         $post = Post::create($data);
@@ -168,7 +172,7 @@ class PostController extends Controller
     public function like(Request $request, Post $post) 
     {
         $message = '';
-        $auth = $request->jwt_user;
+        $auth = $request->user();
 
         $exists = DB::table('likes')
         ->where('user_id', $auth->id)

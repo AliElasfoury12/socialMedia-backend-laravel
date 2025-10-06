@@ -5,8 +5,6 @@ namespace App\Http\Controllers;
 use App\Exceptions\ValidationErrorException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
-use Illuminate\Http\Exceptions\HttpResponseException;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 
 abstract class Controller
@@ -23,5 +21,15 @@ abstract class Controller
             throw new ValidationErrorException($validator->errors());
         
         return $data;
+    }
+
+    protected function response (array $response) 
+    {
+        $request = request();
+        $new_token = $request->new_token;
+
+        if($new_token) $response['new_token'] = $new_token;
+        
+        return response()->json($response);
     }
 }

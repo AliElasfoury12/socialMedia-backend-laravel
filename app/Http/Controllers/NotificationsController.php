@@ -2,13 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\CommentResource;
-use App\Http\Resources\PostResource;
-use App\Models\Comment;
-use App\Models\Post;
-use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Http\Request;
 
 class NotificationsController extends Controller
 {
@@ -24,10 +18,28 @@ class NotificationsController extends Controller
         $notifications = $this->notifications()->latest()
         ->cursorPaginate(5, ['id', 'data', 'read_at','created_at']);
 
-        return response()->json([
-            'notifications' => $notifications->items(),
-            'nextCursor' => $notifications->nextCursor()?->encode() ?? null
+        $next_cursor = $notifications->nextCursor()?->encode();
+        $notifications = $this->format_notifications($notifications);
+
+        return $this->response([
+            'notifications' => $notifications,
+            'nextCursor' => $next_cursor
         ]);
+    }
+
+    private function format_notifications ($notifications) 
+    {
+        $notifications = $notifications->items();
+
+        foreach ($notifications as &$notification) {
+            $notification->data = json_decode($notification->data);
+            foreach ($notification->data as $key => $value) {
+                $notification->$key = $value;
+            }
+            unset($notification->data);
+        }
+
+        return $notifications;
     }
 
     public function getNotificationsCount ()  
@@ -35,7 +47,7 @@ class NotificationsController extends Controller
         $notificationsCount = $this->notifications()
         ->where('seen',false)->count();
 
-        return response()->json([
+        return $this->response([
             'notifications_count' => $notificationsCount,
         ]);
     }
@@ -45,16 +57,16 @@ class NotificationsController extends Controller
         $this->notifications()->where('id', $id)
         ->update(['read_at' => now()]);
 
-        return response()->json([
+        return $this->response([
             'message' => 'notifiction read Successfully'
         ]);
     }
 
-    public function markAllAsRead (Request $request) 
+    public function markAllAsRead () 
     {
         $this->notifications()->update(['read_at' => now()]);
 
-        return response()->json([
+        return $this->response([
             'message' => 'notifictions read Successfully',
         ]);
     }
@@ -62,7 +74,7 @@ class NotificationsController extends Controller
     public function seen () 
     {
         $this->notifications()->update(['seen' => true]);
-        return response()->json([
+        return $this->response([
             'message' => 'notifiction seen Successfully'
         ]);
     }
@@ -80,11 +92,11 @@ class NotificationsController extends Controller
         $post = $postController->formatResponse([$post->toArray()])[0];
 
         if($commentId) {
-            $post['comment'] = $post['comments'][0];
-            unset($post['comments']);
+            $post->comment = $post->comments[0];
+            unset($post->comments);
         }
 
-        return response()->json([
+        return $this->response([
             'post' => $post
         ]);
     }
