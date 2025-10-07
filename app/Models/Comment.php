@@ -23,7 +23,8 @@ class Comment extends Model
     public function user () 
     {
         return $this->belongsTo(User::class)
-        ->select(['id','name','profile_image_id'])->with(['profilePic']);
+        ->select(['id','name','profile_image_id'])
+        ->with(['profilePic']);
     }
        
 }

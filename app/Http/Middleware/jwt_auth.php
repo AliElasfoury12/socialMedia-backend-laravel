@@ -6,6 +6,7 @@ use App\Exceptions\ValidationErrorException;
 use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 use App\JWT_Token\JWT_Token;
 
@@ -18,25 +19,9 @@ class jwt_auth
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $token = $request->bearerToken();
-        
-        try {
-            $jwt_user = JWT_Token::CheckToken($token);
-        } catch (\Throwable $th) {
-            $message = $th->getMessage();
-            if($message == 'Token Expired') {
-                $new_token = JWT_Token::UpdateToken($token, '7 day');
-                $jwt_user = JWT_Token::CheckToken($new_token);
-                $request->new_token = $new_token;
-            }else{
-                throw new ValidationErrorException(['token' => $message]);
-            }
+        if(!Auth::guard('api')->check()){
+            return response()->json(['error' => 'Unauthorized'],401);
         }
-
-        $user = new User((array) $jwt_user);
-        $user->id = $jwt_user->id;
-        auth()->setUser($user);
-        $request->setUserResolver(fn() => $user);
         return $next($request);
     }
 }

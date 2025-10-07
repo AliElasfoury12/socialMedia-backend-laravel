@@ -23,15 +23,9 @@ class UsersProfileImageController extends Controller
      */
     public function store(Request $request)
     {
-        $IsNotValid = Validator::make($request->all(), [
+        $this->isValid($request,[
             'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048'
-        ])->fails();
-
-        if($IsNotValid) {
-            return response()->json([
-                'errors' => ['image' => 'not a valid Image']
-            ],422);
-        }
+        ] );
 
         $imageController = new ImagesController();
         $url = $imageController->storeImage($request->file('image'),'profile/');
@@ -39,7 +33,7 @@ class UsersProfileImageController extends Controller
 
         DB::statement('CALL UpdateUserProfileImage(?,?)', [$user_id, $url]);
         
-        return response()->json([
+        return $this->response([
             'message' => 'Profile Image Updated Successfully',
             'profile_image_url' => $url
         ]);

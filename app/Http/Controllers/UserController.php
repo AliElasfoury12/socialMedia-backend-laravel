@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\UserResource;
+use App\Exceptions\ValidationErrorException;
 use App\Jobs\DeleteImagesJob;
+use App\JWT_Token\JWT_Token;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -26,20 +27,22 @@ class UserController extends Controller
 
     public function update(Request $request)
     {
-        $auth_user = $request->user();
+        $user = $request->user();
 
         $data = $this->isValid($request, [
             'name' => 'required|string|min:1|max:200',
-            'email' => "required|email|unique:users,email,{$auth_user->id}|max:200",
+            'email' => "required|email|unique:users,email,{$user->id}|max:200",
             'password' => "required|current_password|max:200"
         ]);
         
-       $auth_user->update($data);
-       $auth_user = $auth_user->only(['id', 'name', 'email']);
+       $user->update($data);
+       $new_token = JWT_Token::CreatToken($user, '7 day');
+       $user = $user->only(['id', 'name', 'email']);
 
-        return response()->json([
+        return $this->response([
             'message' => 'User updated successfully',
-            'user' => $auth_user
+            'user' => $user,
+            'new_token' => $new_token
         ]);
     }
 
@@ -57,7 +60,7 @@ class UserController extends Controller
        
         $user->delete();
 
-        return response()->json([
+        return $this->response([
             'message' => 'User deleted successfully',
             'user' => $user->only(['id', 'name', 'email'])
         ]);
@@ -69,7 +72,7 @@ class UserController extends Controller
         ->with(['profilePic'])
         ->cursorPaginate(6,['id','name', 'profile_image_id']);
 
-        return response()->json([
+        return $this->response([
             'users' => $users->items(),
             'nextCursor' => $users->nextCursor()?->encode()
         ]);
@@ -86,19 +89,17 @@ class UserController extends Controller
        $posts = $posts->toArray()['data'];
        $posts = $postController->formatResponse($posts);
 
-        return response()->json(
+        return $this->response(
             compact(['posts', 'page', 'lastPage'])
         );
     }
 
-    public function follow (User $user, Request $request) 
+    public function follow (Request $request, User $user) 
     {
         $authId = $request->user()->id;
 
         if($user->id == $authId){
-            return response()->json(
-                ['error' => "can't follow your self" ]
-            ,422);
+            throw new ValidationErrorException(['error' => "can't follow your self" ]);
         }
 
         $message = '';
@@ -116,11 +117,9 @@ class UserController extends Controller
             $message = 'Follow';
         }
 
-        return response()->json([
+        return $this->response([
             'message' => $message,
-            'follows' => $user->follows->count() ? true : false
+            'follows' => $user->follows?->count() ? true : false
         ]);
     }
-
-   
 }

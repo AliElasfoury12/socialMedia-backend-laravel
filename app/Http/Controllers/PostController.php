@@ -96,7 +96,7 @@ class PostController extends Controller
         ->where('user_id', $data['user_id'])
         ->update(['content' => $data['content']]);
 
-        if (!$is_updated) 
+        if(!$is_updated) 
             throw new ValidationErrorException(['message' => 'Something Went Wrong']);
 
         $postImages = $this->storeImages($images,$post_id);

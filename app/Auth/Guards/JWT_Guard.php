@@ -44,16 +44,12 @@ class JWT_Guard implements Guard
         if(!$token) return null;
 
         try {
-            $user = JWT_Token::CheckToken($token);
-            $this->user = new User($user);
-            $this->user->id = $user->id;
+            $this->create_user($token);
         } catch (\Throwable $th) {
             $message = $th->getMessage();
             if($message == 'Token Expired') {
                 $new_token = JWT_Token::UpdateToken($token, '7 day');
-                $user = JWT_Token::CheckToken($new_token);
-                $this->user = new User($user);
-                $this->user->id = $user->id;
+                $this->create_user($new_token);
                 $this->request->new_token = $new_token;
             }else{
                 return null;
@@ -71,5 +67,14 @@ class JWT_Guard implements Guard
     public function validate(array $credentials = [])   
     {
         return false;
+    }
+
+    private function create_user (string $token) 
+    {
+        $user = JWT_Token::CheckToken($token);
+        $this->user = new User(attributes: (array) $user);
+        $this->user->id = $user->id;
+        $this->user->exists = true;
+        $this->user->syncOriginal();
     }
 }

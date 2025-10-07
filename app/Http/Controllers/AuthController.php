@@ -77,12 +77,7 @@ class AuthController extends Controller
             ]);
         }
 
-        $new_hash_password = Hash::make($request->new_password);
-
-        User::where('id', $user->id)
-        ->update(['password' => $new_hash_password]);
-
-        $user->password = $new_hash_password;
+        $user->update(['password' => $request->new_password]);
 
         $new_jwt_token = JWT_Token::CreatToken($user, '7 day');
 

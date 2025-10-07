@@ -18,13 +18,22 @@ use function React\Promise\all;
 
 Route::get('/', function (Request $request) 
 {
-   try {
-    $x = 10;
-    throw new Exception('ali');
-   } catch (\Throwable $th) {
-    echo $th->getMessage();
-   }
+    $user2 = new User([
+        'id' => 99,
+        'name' => 'ali2',
+        'email' => 'ali2@g.c',
+        'password' => '$2y$12$byGlRLUThjVrhmoAsaqiZeWyB73z9nzYbwDuqnjFua1HIe7X2KT4C'
+    ]);
+
+    $user2->exists = true;
+    $user2->id = 99;
+    $user2->syncOriginal();
+
+    $user2->update(['name' => 'ali23']);
+   
+
+
     echo "<pre>";
-    print_r([$x ]);
+    print_r([$user2]);
     echo"</pre>";
 });
