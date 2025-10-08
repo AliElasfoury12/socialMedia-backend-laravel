@@ -8,6 +8,7 @@ use App\Models\Comment;
 use App\Models\Post;
 use App\Models\User;
 use App\Repositories\PostRepository;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Benchmark;
@@ -18,22 +19,43 @@ use function React\Promise\all;
 
 Route::get('/', function (Request $request) 
 {
-    $user2 = new User([
-        'id' => 99,
-        'name' => 'ali2',
-        'email' => 'ali2@g.c',
-        'password' => '$2y$12$byGlRLUThjVrhmoAsaqiZeWyB73z9nzYbwDuqnjFua1HIe7X2KT4C'
-    ]);
+    // $db_seeder = new DatabaseSeeder();
+    // $db_seeder->run();
 
-    $user2->exists = true;
-    $user2->id = 99;
-    $user2->syncOriginal();
+// users_seeder
+    $last_user_id = User::max('id') ?? 0;
+    $last_user_id++;
 
-    $user2->update(['name' => 'ali23']);
+    $users = User::factory(10)->make()->toArray();
+
+    $user_id = $last_user_id;
+
+    foreach ($users as &$user) {
+        $date = now()->format('Y-m-d H:i:s');
+        $user['email_verified_at'] = $date;
+        $user['created_at'] = $date;
+        $user['updated_at'] = $date;
+        $user['id'] = $user_id;
+        $user_id++;
+    }
+    User::insert($users);
+
+//posts_seeder
+    $posts = [];
+    for ($i=0; $i < 10; $i++) { 
+        for ($j=0; $j < 10 ; $j++) { 
+            $user_id = $users[$j]['id']; 
+            $post = Post::factory(1)->make(['user_id' => $user_id])->toArray()[0];
+            $post['user_id'] = $user_id;
+            $posts[] = $post;
+        }
+    }
+
    
+  Post::insert($posts);
 
 
     echo "<pre>";
-    print_r([$user2]);
+    print_r([/*$posts*/ $last_user_id, $users]);
     echo"</pre>";
 });

@@ -26,7 +26,6 @@ class BroadcastServiceProvider extends ServiceProvider
         ]);
 
         require base_path('routes/channels.php');
-        
     }
         
 }

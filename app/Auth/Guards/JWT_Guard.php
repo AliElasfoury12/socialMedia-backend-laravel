@@ -18,7 +18,7 @@ class JWT_Guard implements Guard
     }
     public function check(): bool  
     {
-        return $this->user !== null;
+        return $this->user() !== null;
     }
 
     public function guest ()  
@@ -33,7 +33,7 @@ class JWT_Guard implements Guard
 
     public function id ()  
     {
-        return $this->user?->id ?? null;
+        return $this->user()?->id ?? null;
     }
 
     public function user ()  
@@ -61,7 +61,7 @@ class JWT_Guard implements Guard
 
     public function setUser(Authenticatable $user)   
     {
-        $this->$user = $user;
+        $this->user = $user;
     }
 
     public function validate(array $credentials = [])   

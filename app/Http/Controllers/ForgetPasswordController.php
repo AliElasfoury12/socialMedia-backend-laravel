@@ -100,7 +100,7 @@ class ForgetPasswordController extends Controller
         ]); 
     }
 
-    private function is_otp_still_valid (object $otp_data) 
+    private function is_otp_still_valid (object|null $otp_data) 
     {
         if(!$otp_data) {
             throw new ValidationErrorException([

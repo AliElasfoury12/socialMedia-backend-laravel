@@ -65,7 +65,7 @@ class PostController extends Controller
 
     public function show(Post $post)
     {
-        return $this->response($post->content);
+        return $this->response(['content' => $post->content]);
     }
 
     public function store(Request $request)

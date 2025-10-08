@@ -119,7 +119,7 @@ class UserController extends Controller
 
         return $this->response([
             'message' => $message,
-            'follows' => $user->follows?->count() ? true : false
+            'follows' => !$isFollowing
         ]);
     }
 }
