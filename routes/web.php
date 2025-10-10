@@ -23,39 +23,48 @@ Route::get('/', function (Request $request)
     // $db_seeder->run();
 
 // users_seeder
-    $last_user_id = User::max('id') ?? 0;
-    $last_user_id++;
+    // $last_user_id = User::max('id') ?? 0;
+    // $last_user_id++;
 
-    $users = User::factory(10)->make()->toArray();
+    // $users = User::factory(10)->make()->toArray();
 
-    $user_id = $last_user_id;
+    // $user_id = $last_user_id;
 
-    foreach ($users as &$user) {
-        $date = now()->format('Y-m-d H:i:s');
-        $user['email_verified_at'] = $date;
-        $user['created_at'] = $date;
-        $user['updated_at'] = $date;
-        $user['id'] = $user_id;
-        $user_id++;
-    }
-    User::insert($users);
+    // foreach ($users as &$user) {
+    //     $date = now()->format('Y-m-d H:i:s');
+    //     $user['email_verified_at'] = $date;
+    //     $user['created_at'] = $date;
+    //     $user['updated_at'] = $date;
+    //     $user['id'] = $user_id;
+    //     $user_id++;
+    // }
+    // User::insert($users);
 
 //posts_seeder
-    $posts = [];
-    for ($i=0; $i < 10; $i++) { 
-        for ($j=0; $j < 10 ; $j++) { 
-            $user_id = $users[$j]['id']; 
-            $post = Post::factory(1)->make(['user_id' => $user_id])->toArray()[0];
-            $post['user_id'] = $user_id;
-            $posts[] = $post;
-        }
-    }
+//     $posts = [];
+//     for ($i=0; $i < 10; $i++) { 
+//         for ($j=0; $j < 10 ; $j++) { 
+//             $user_id = $users[$j]['id']; 
+//             $post = Post::factory(1)->make(['user_id' => $user_id])->toArray()[0];
+//             $post['user_id'] = $user_id;
+//             $posts[] = $post;
+//         }
+//     }
 
    
-  Post::insert($posts);
+//   Post::insert($posts);
 
+    $postsRepository = new PostRepository;
+    $postController = new PostController;
+    $posts = $postsRepository->getPosts(192,10,$request->cursor);
+    $posts = $postController->formatResponse($posts);
 
-    echo "<pre>";
-    print_r([/*$posts*/ $last_user_id, $users]);
-    echo"</pre>";
+    $a = new stdClass;
+    $a->b = new stdClass;
+    $a->b->c = null;
+    $a->b->c ? print 'ali' : print '2' ;
+
+     echo "<pre>";
+     print_r($posts);
+     echo"</pre>";
 });

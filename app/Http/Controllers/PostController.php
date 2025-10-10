@@ -33,6 +33,7 @@ class PostController extends Controller
 
         $postsRepository = new PostRepository;
         $posts = $postsRepository->getPosts($request->user()->id,10,$request->cursor);
+        $posts = $this->formatResponse($posts);
         $nextCursor = $postsRepository->get_next_cursor();
 
         return $this->response([
@@ -44,20 +45,23 @@ class PostController extends Controller
     public function formatResponse (array $posts): array
     {
         foreach ($posts as &$post) {
+          
             $post = (object) $post;
-
-            if (strlen($post->content) > 80 ) 
+              
+            if (strlen($post->content) > 80) 
                 $post->content = substr($post->content,0,80).'...';
             
-            if(isset($post->is_liked_by_auth_user))
+            if(property_exists($post,"is_liked_by_auth_user"))
                 $post->is_liked_by_auth_user = $post->is_liked_by_auth_user ? true : false;
             
             $post->user = (object) $post->user;
-            $post->user->is_auth_user_follows = $post->user->is_auth_user_follows ? true : false;
+
+            if(property_exists($post->user,"is_auth_user_follows"))
+                $post->user->is_auth_user_follows = $post->user->is_auth_user_follows ? true : false;
             
-            if(isset($post->shared_post) && $post->shared_post) 
-                $post->shared_post = $this->formatResponse($post->shared_post)[0];
-            else if(isset($post->shared_post))
+            if(isset($post?->shared_post['id'])) 
+                $post->shared_post = $this->formatResponse([$post->shared_post])[0];
+            else if(isset($post?->shared_post))
                 $post->shared_post = null;    
         }
         return $posts;
