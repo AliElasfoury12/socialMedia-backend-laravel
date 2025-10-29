@@ -58,6 +58,10 @@ class PostController extends Controller
 
             if(property_exists($post->user,"is_auth_user_follows"))
                 $post->user->is_auth_user_follows = $post->user->is_auth_user_follows ? true : false;
+
+            if($post->user->profile_pic == null) $post->user->profile_pic = ['url' => null];
+            
+            if(isset($post?->shared_post[0]['id'])) $post->shared_post = $post?->shared_post[0];
             
             if(isset($post?->shared_post['id'])) 
                 $post->shared_post = $this->formatResponse([$post->shared_post])[0];
@@ -76,12 +80,21 @@ class PostController extends Controller
     {
         $content = $request['content'] ?? '';
         $images = $request->allFiles();
+        
+        if(!$content && !$images){
+            throw new ValidationErrorException([
+                'message' => 'you must add post content or one image' 
+            ]);
+        }
 
-        $data = $this->valdaitePost($request,$content,$images);
+        $data = [
+            'content' => $content,
+            'user_id' => $request->user()->id
+        ];
 
         $post = Post::create($data);
 
-        $post->post_imgs =  $this->storeImages($images,$post->id);
+        $post->post_imgs = $this->storeImages($images,$post->id);
         
         return $this->response([
             'message' => 'post created Successfully',
@@ -94,19 +107,34 @@ class PostController extends Controller
         $content = $request['content'] ?? '';
         $images = $request->allFiles();
 
-        $data = $this->valdaitePost($request,$content,$images);
+        if(!$content && !$images && !isset($request['to_delete_images'])){
+            throw new ValidationErrorException([
+                'message' => 'you must add post content or one image' 
+            ]);
+        }
 
-        $is_updated = Post::where('id',$post_id)
-        ->where('user_id', $data['user_id'])
-        ->update(['content' => $data['content']]);
+        if($content) {
+            $is_updated = Post::where('id',$post_id)
+            ->where('user_id', $request->user()->id)
+            ->update(['content' => $content]);
 
-        if(!$is_updated) 
-            throw new ValidationErrorException(['message' => 'Something Went Wrong']);
+            if(!$is_updated) 
+                throw new ValidationErrorException(['message' => 'Something Went Wrong']);
+        }
 
         $postImages = $this->storeImages($images,$post_id);
 
+        $is_success = false;
+        if($request['to_delete_images']){
+            $image_controller = new ImagesController;
+            $is_success = $image_controller->deletePostImages($request);
+        }
+
+        $delete_images_message = $is_success? 'images deleted successfully': null;
+
         return $this->response([
             'message' => 'Post Updated successfully',
+            'to_delete_images_message' => $delete_images_message,
             'post' => [
                 'content' => $content,
                 'post_imgs' => $postImages
@@ -130,28 +158,13 @@ class PostController extends Controller
         ]);
     }
 
-    private function storeImages (array $images,string $post_id): array
+    private function storeImages (array|null $images,string $post_id): array
     {
         if($images) {
             $imageController  = new ImagesController;
             $images = $imageController->storePostImages($images,$post_id);
         }
-        return $images;
-    }
-
-    private function valdaitePost (Request $request, string $content, array $images) 
-    {
-        if(!$content && !$images){
-            throw new ValidationErrorException([
-                'message' => 'you must add post content or one image' 
-            ]);
-        }
-
-        return [
-            'content' => $content,
-            'user_id' => $request->user()->id
-        ];
-
+        return $images ?? [];
     }
 
     public function sharePost (Request $request, int $sharedPostId) 

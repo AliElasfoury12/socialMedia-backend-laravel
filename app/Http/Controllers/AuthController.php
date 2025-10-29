@@ -45,6 +45,9 @@ class AuthController extends Controller
             ]);
         }
 
+        $user = (object) $user->toArray();
+        if($user->profile_pic == null) $user->profile_pic = ['url' => null];
+
         $token = JWT_Token::CreatToken($user,'1 min');
 
         unset($user->password, $user->updated_at, $user->expires_at);

@@ -2,32 +2,44 @@
 
 namespace Database\Seeders;
 
-use App\Models\Comment;
+use App\Data\Image;
 use App\Models\Post;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\UsersProfileImage;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Str;
 
 class DatabaseSeeder extends Seeder
 {
+    private object $storage;
+
+    public function __construct() {
+        $this->storage = Storage::disk('public');
+    }
+
     /**
      * Seed the application's database.
      */
     public function run(): void
     {
-        function comment_seeder ($user, $post)
-        {
-            Comment::factory(2)->create(['user_id' => $user->id, 'post_id' => $post->id]);
-        };
+        $start = microtime(true);
 
-        $post_seeder = function($user)  
-        {
-            Post::factory(10)->create(['user_id' => $user->id])
-            ->each(fn ($post) => comment_seeder($user, $post));
-        };
+        $this->call([
+            UsersSeeder::class,
+            FollowersSeeder::class,
+            UserProfileImagesSeeder::class,
+            PostsSeeder::class,
+            LikesSeeder::class,
+            CommentsSeeder::class,
+            SharedPostsSeeder::class,
+            PostsImagesSeeder::class
+        ]);
 
-        $users = User::factory(10)->create();
-
-        
+        $end = microtime(true);
+        $execution_time = $end - $start;
+        echo "Time: $execution_time \n";
     }
 }

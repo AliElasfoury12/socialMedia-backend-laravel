@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->foreignId('profile_image_id')->after('remember_token')->nullable()->constrained('users_profile_images');
+            $table->foreignId('profile_image_id')->after('remember_token')->nullable()->constrained('users_profile_images')->cascadeOnDelete();
         });
     }
 

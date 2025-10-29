@@ -17,6 +17,7 @@ class PostRepository
         $last_id = $this->get_last_id($cursor);
         $posts = $this->fetch_posts($auth_id,$per_page,$last_id);
         $this->setNextCusror($posts, $per_page);
+        unset($posts[$per_page]);
         $posts_images = $this->fetch_post_images($posts);
         $posts_images_index = $this->indexPostsImages($posts_images);
         return $this->formatPosts($posts, $posts_images_index);
@@ -31,12 +32,13 @@ class PostRepository
         $this->comments_count();
 
         $offest = $last_id ? "AND posts.id < $last_id" : '';
+        $limit = ++$per_page;
 
         return "SELECT posts.id, posts.content,posts.created_at,
         {$this->select}
         from posts 
         {$this->joins}
-        WHERE posts.user_id = users.id $offest ORDER BY posts.created_at DESC LIMIT $per_page ";
+        WHERE posts.user_id = users.id $offest ORDER BY posts.id DESC LIMIT $limit ";
     }
 
     private function user(int $auth_id): void 
@@ -116,7 +118,7 @@ class PostRepository
 
     private function fetch_posts (int $auth_id, int $per_page, int $last_id): array 
     {
-        $query = $this->query($auth_id, ++$per_page, $last_id);
+        $query = $this->query($auth_id, $per_page, $last_id);
         return $this->fetch($query);
     }
 
@@ -173,14 +175,14 @@ class PostRepository
             ];
 
             $post['post_imgs'] = $post_images_index[$post['id']] ?? [];
-            $post['shared_post'] = $post['shared_post_id'] ? $this->formatSharedPost($post): null;
+            $post['shared_post'] = $post['shared_post_id'] ? $this->formatSharedPost($post,$post_images_index): null;
             $this->delete_unused_fields_from_post($post);
         }
 
         return $posts;
     }
 
-    private function formatSharedPost (array $post): array 
+    private function formatSharedPost (array $post, array $post_images_index): array 
     {
         return [
             'id' => $post['shared_post_id'],
@@ -195,6 +197,7 @@ class PostRepository
             ]
         ];
     }
+
     private function delete_unused_fields_from_post (array &$post): void 
     {
         unset(
@@ -217,11 +220,14 @@ class PostRepository
     private function setNextCusror (array &$posts, int $per_page): void 
     {
         $this->nextCursor = new stdClass;
-        $this->nextCursor->id = $posts[$per_page - 1]['id'];
+        
         if(isset($posts[$per_page])) {
+            $this->nextCursor->id = $posts[$per_page - 1]['id'];
             $this->nextCursor->isNextItems = true;
-            unset($posts[$per_page]);
-        }else $this->nextCursor->isNextItems = null;
+        }else {
+            $this->nextCursor->id = null;
+            $this->nextCursor->isNextItems = null;
+        }
     }
 
     public function get_next_cursor (): string|null  

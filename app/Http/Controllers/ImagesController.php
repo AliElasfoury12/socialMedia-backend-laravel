@@ -28,22 +28,26 @@ class ImagesController extends Controller
 
     public function deletePostImages (Request $request) 
     {
-        $this->isValid($request,['images' => "required|array"]);
-        
+       // $this->isValid($request,['to_delete_images' => "required|array"]);
+        $to_delete_images = isset($request['to_delete_images']) ? json_decode($request['to_delete_images']) : null;
+        if(!$to_delete_images) return false;
         $imagesIds = [];
 
-        foreach ($request->images as $image) {
-            Storage::disk('public')->delete('posts/'.$image['img']);
-            $imagesIds[] = $image['id'];
+        foreach ($to_delete_images as $image) {
+            Storage::disk('public')->delete('posts/'.$image->img);
+            $imagesIds[] = $image->id;
         }
 
         PostImg::whereIn('id', $imagesIds)->delete();
 
-        return $this->response([
-            'message' => 'Images Deleted successfully',
-            'images' => $request->images
-        ]);
+        // return $this->response([
+        //     'message' => 'Images Deleted successfully',
+        //     'images' => $request->images
+        // ]);
+
+        return true;
     }
+
 
     public function storeImage ($img, string $path): string 
     {

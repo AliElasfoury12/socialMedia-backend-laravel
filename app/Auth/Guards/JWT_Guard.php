@@ -74,6 +74,7 @@ class JWT_Guard implements Guard
         $user = JWT_Token::CheckToken($token);
         $this->user = new User(attributes: (array) $user);
         $this->user->id = $user->id;
+        $this->user->profile_pic = $user->profile_pic;
         $this->user->exists = true;
         $this->user->syncOriginal();
     }

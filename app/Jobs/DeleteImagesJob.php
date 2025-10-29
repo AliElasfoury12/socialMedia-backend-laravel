@@ -17,10 +17,12 @@ class DeleteImagesJob implements ShouldQueue
      */
     public $id;
     public $type;
-    public function __construct($id, $type)
+    private array $images;
+    public function __construct($id, $type, array $images)
     {
-      $this->id = $id;  
-      $this->type = $type; 
+        $this->id = $id;  
+        $this->type = $type; 
+        $this->images = $images;
     }
 
     /**
@@ -40,9 +42,7 @@ class DeleteImagesJob implements ShouldQueue
         }
         
         if($this->type === 'profile'){
-            $imgs = UsersProfileImage::selet('url')->where('user_id', $this->id)->get();
-
-            foreach ($imgs as $image) {
+            foreach ($this->images as $image) {
                 Storage::disk('public')->delete("profile/$image");
             }
         }

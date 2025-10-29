@@ -6,6 +6,7 @@ use App\Exceptions\ValidationErrorException;
 use App\Jobs\DeleteImagesJob;
 use App\JWT_Token\JWT_Token;
 use App\Models\User;
+use App\Models\UsersProfileImage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -19,7 +20,8 @@ class UserController extends Controller
         ->withCount(['followers', 'followings'])->get();
 
         $user = $user->toArray()[0];
-        $user['is_auth_user_follows'] = count($user['is_auth_user_follows']) == 0 ? false : true;  
+        $user['is_auth_user_follows'] = count($user['is_auth_user_follows']) == 0 ? false : true; 
+        if($user['profile_pic'] == null)  $user['profile_pic'] = ['url' => null]; 
         unset($user->profile_image_id);
 
         return $this->response(['user' => $user]);
@@ -53,11 +55,13 @@ class UserController extends Controller
         ]);
 
         $user = $request->user();
+        $profile_images = UsersProfileImage::select(['url'])->where('user_id', $user->id)->get();
+        $profile_images = $profile_images->toArray();
 
-        if($user->profile_image_id){
-            DeleteImagesJob::dispatchSync($user->id, 'profile');
+        if($user->profile_pic->url){
+            DeleteImagesJob::dispatchAfterResponse($user->id, 'profile', $profile_images);
         } 
-       
+
         $user->delete();
 
         return $this->response([
